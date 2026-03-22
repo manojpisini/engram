@@ -369,5 +369,5 @@ engram/
 ---
 
 <p align="center">
-  Built for the <a href="https://dev.to/devteam/join-the-notion-mcp-challenge-1500-in-prizes-73e">DEV.to x Notion MCP Challenge</a>
+  Built for the <a href="https://dev.to/challenges/notion-2026-03-04">DEV.to x Notion MCP Challenge</a>
 </p>
