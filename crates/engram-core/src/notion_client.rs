@@ -189,6 +189,11 @@ impl NotionMcpClient {
         self.patch(&format!("/blocks/{page_id}/children"), &payload).await
     }
 
+    /// Raw POST — for creating pages with custom parent types (used by setup)
+    pub async fn post_raw(&self, path: &str, payload: &Value) -> Result<Value> {
+        self.post(path, payload).await
+    }
+
     // ─── HTTP helpers ───
 
     async fn get(&self, path: &str) -> Result<Value> {

@@ -292,17 +292,19 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Workspace ID</label>
+                    <label>Parent Page ID</label>
                     <input id="fsWorkspaceId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" spellcheck="false">
-                    <div class="form-hint">UUID format — found in Notion Settings or your workspace URL</div>
-                    <div class="fs-help-toggle" onclick="toggleHelp(this)"><span class="arrow">&#9654;</span> How to find this</div>
+                    <div class="form-hint">The Notion page where ENGRAM will create all its databases</div>
+                    <div class="fs-help-toggle" onclick="toggleHelp(this)"><span class="arrow">&#9654;</span> How to get this</div>
                     <div class="fs-help-box">
                         <ol>
-                            <li>Open <a href="https://www.notion.so" target="_blank">notion.so</a> in your browser</li>
-                            <li>Click <strong>Settings &amp; members</strong> (gear icon in sidebar)</li>
-                            <li>Go to <strong>Settings</strong> tab &rarr; scroll down to find <strong>Workspace ID</strong></li>
+                            <li>Open <a href="https://www.notion.so" target="_blank">Notion</a> and create a new page (or pick an existing one)</li>
+                            <li>Click <strong>&bull;&bull;&bull;</strong> (top right) &rarr; <strong>"Add connections"</strong> &rarr; select <strong>ENGRAM</strong></li>
+                            <li>Copy the page URL — it looks like: <code>notion.so/Your-Page-<strong>abc123def456</strong></code></li>
+                            <li>The <strong>last 32 characters</strong> (after the last dash) are the Page ID</li>
+                            <li>Format it as a UUID: <code>xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</code></li>
                         </ol>
-                        Or check your URL: <code>notion.so/<strong>workspace-name</strong>/...</code> — the ID is shown in Settings.
+                        <div class="help-warn">&#9888; You MUST share this page with the ENGRAM integration, otherwise database creation will fail.</div>
                     </div>
                 </div>
             </div>
@@ -929,8 +931,9 @@
                 <span style="font-size:10px;color:var(--text3)">Create at notion.so/profile/integrations</span>
             </div>
             <div class="form-group">
-                <label>Notion Workspace ID</label>
+                <label>Notion Parent Page ID</label>
                 <input id="cfgWorkspaceId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                <span style="font-size:10px;color:var(--text3)">Page ID where ENGRAM databases are created — must be shared with the integration</span>
             </div>
             <div class="form-group">
                 <label>Anthropic API Key</label>

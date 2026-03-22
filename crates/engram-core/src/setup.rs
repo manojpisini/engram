@@ -13,20 +13,27 @@ use engram_types::config::DatabaseIds;
 pub type ProgressFn = Box<dyn Fn(usize, usize, &str) + Send + Sync>;
 
 /// Create all 23 ENGRAM databases in the Notion workspace.
+/// First creates (or finds) an ENGRAM parent page, then creates all databases under it.
+/// The `parent_id` can be either a workspace page ID or a specific page ID.
 /// Returns the populated DatabaseIds.
 pub async fn create_all_databases(
     notion: &NotionMcpClient,
-    workspace_id: &str,
+    parent_id: &str,
 ) -> Result<DatabaseIds> {
     let mut db = DatabaseIds::default();
     let total = 23;
     let mut step = 0;
 
+    // Try to find an existing ENGRAM parent page, or create one
+    let engram_page_id = find_or_create_engram_page(notion, parent_id).await
+        .context("Failed to create ENGRAM parent page. Make sure your Notion token has access to the specified page/workspace, and that you've shared the parent page with the ENGRAM integration.")?;
+    info!("[Setup] Using ENGRAM parent page: {}", engram_page_id);
+
     macro_rules! create_db {
         ($name:expr, $field:ident, $props:expr) => {{
             step += 1;
             info!("[Setup] ({}/{}) Creating {}...", step, total, $name);
-            let result = notion.create_database($name, workspace_id, $props).await
+            let result = notion.create_database($name, &engram_page_id, $props).await
                 .with_context(|| format!("Failed to create database: {}", $name))?;
             db.$field = extract_id(&result);
             info!("[Setup] ({}/{}) {} → {}", step, total, $name, &db.$field);
@@ -495,4 +502,71 @@ fn extract_id(result: &serde_json::Value) -> String {
         .or_else(|| result["data"]["id"].as_str())
         .unwrap_or("unknown")
         .to_string()
+}
+
+/// Find an existing "ENGRAM" page in the workspace, or create one under the given parent.
+/// The parent_id can be a page ID that has been shared with the integration.
+async fn find_or_create_engram_page(
+    notion: &NotionMcpClient,
+    parent_id: &str,
+) -> Result<String> {
+    // First, try to search for an existing ENGRAM page
+    info!("[Setup] Searching for existing ENGRAM parent page...");
+    if let Ok(search_result) = notion.search("ENGRAM", Some(json!({
+        "value": "page",
+        "property": "object"
+    }))).await {
+        if let Some(results) = search_result["results"].as_array() {
+            for page in results {
+                let title = page["properties"]["title"]["title"]
+                    .as_array()
+                    .and_then(|a| a.first())
+                    .and_then(|t| t["plain_text"].as_str())
+                    .unwrap_or("");
+                if title == "ENGRAM" && page["archived"].as_bool() != Some(true) {
+                    let id = page["id"].as_str().unwrap_or("").to_string();
+                    if !id.is_empty() {
+                        info!("[Setup] Found existing ENGRAM page: {}", id);
+                        return Ok(id);
+                    }
+                }
+            }
+        }
+    }
+
+    // No existing page found — create one under the parent
+    info!("[Setup] Creating new ENGRAM parent page under {}...", parent_id);
+    let page_payload = json!({
+        "parent": { "page_id": parent_id },
+        "properties": {
+            "title": {
+                "title": [{
+                    "text": { "content": "ENGRAM" }
+                }]
+            }
+        },
+        "icon": { "type": "emoji", "emoji": "🧠" },
+        "children": [{
+            "object": "block",
+            "type": "callout",
+            "callout": {
+                "icon": { "type": "emoji", "emoji": "⚡" },
+                "rich_text": [{
+                    "type": "text",
+                    "text": { "content": "This page is managed by ENGRAM — Engineering Intelligence Platform. All databases below are auto-generated and updated by the ENGRAM agents." }
+                }]
+            }
+        }]
+    });
+
+    let result = notion.post_raw("/pages", &page_payload).await
+        .context("Failed to create ENGRAM parent page. Ensure the parent page ID is correct and shared with the ENGRAM integration.")?;
+
+    let page_id = extract_id(&result);
+    if page_id == "unknown" || page_id.is_empty() {
+        anyhow::bail!("Created ENGRAM page but got no ID in response");
+    }
+
+    info!("[Setup] Created ENGRAM parent page: {}", page_id);
+    Ok(page_id)
 }
