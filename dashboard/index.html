@@ -291,8 +291,25 @@
                         <div class="help-warn">&#9888; You must also share your Notion page with the integration: open any page &rarr; ••• &rarr; "Add connections" &rarr; select ENGRAM</div>
                     </div>
                 </div>
-                <div style="margin-top:16px;padding:10px 14px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);border-radius:8px;">
-                    <div style="font-size:11px;color:var(--green);">&#10003; ENGRAM will automatically create a styled parent page in your workspace with all 23 databases nested inside. No page ID needed.</div>
+                <div class="form-group" style="margin-top:14px;">
+                    <label>Parent Page ID <span style="color:var(--text3);font-weight:400;font-size:10px;">(optional)</span></label>
+                    <input id="fsParentPageId" placeholder="Leave empty to auto-create at workspace root" spellcheck="false">
+                    <div class="form-hint">If workspace-root creation fails, share any Notion page with your integration and paste its page ID here</div>
+                    <div class="fs-help-toggle" onclick="toggleHelp(this)"><span class="arrow">&#9654;</span> How to get this</div>
+                    <div class="fs-help-box">
+                        <ol>
+                            <li>Open any page in Notion where you want ENGRAM databases</li>
+                            <li>Click <strong>•••</strong> (top right) &rarr; <strong>"Add connections"</strong> &rarr; select <strong>ENGRAM</strong></li>
+                            <li>Click <strong>"Share"</strong> (top right) &rarr; <strong>"Copy link"</strong></li>
+                            <li>The link looks like: <code>notion.so/Your-Page-<strong>abc123def456</strong></code></li>
+                            <li>The last 32 characters (after the last dash) is the Page ID</li>
+                            <li>Or: Click <strong>•••</strong> &rarr; <strong>"Copy link to page"</strong> &rarr; extract the ID from the URL</li>
+                        </ol>
+                        <div class="help-warn">&#9888; The page must be shared with your ENGRAM integration, otherwise database creation will fail.</div>
+                    </div>
+                </div>
+                <div style="margin-top:10px;padding:10px 14px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);border-radius:8px;">
+                    <div style="font-size:11px;color:var(--green);">&#10003; ENGRAM will automatically create a styled parent page with all 23 databases nested inside.</div>
                 </div>
             </div>
 
@@ -1061,6 +1078,8 @@ window.submitFirstStart = async function(){
     if(sp) body.server_port=parseInt(sp,10);
     const ws=$('fsWebhookSecret').value.trim();
     if(ws) body.webhook_secret=ws;
+    const pp=$('fsParentPageId').value.trim();
+    if(pp) body.parent_page_id=pp;
 
     if(!nt){
         status.textContent='Notion integration token is required to continue.';
@@ -1149,20 +1168,36 @@ window.switchRepo = function(v){ currentRepo=v||null; fetchAll(); };
 
 function loadRepoSelector(){
     const sel=$('repoSelect');
+    // Clear existing options except "All Repositories"
+    while(sel.options.length>1) sel.remove(1);
+    const added=new Set();
+
+    // Add repos from config
     const c=cfg();
     if(c.repos){
         c.repos.split(',').map(r=>r.trim()).filter(Boolean).forEach(r=>{
-            const o=document.createElement('option'); o.value=r; o.textContent=r; sel.appendChild(o);
+            if(!added.has(r)){ added.add(r); const o=document.createElement('option'); o.value=r; o.textContent=r; sel.appendChild(o); }
         });
     }
+
+    // Add repos from GitHub API
+    api('/api/github/repos').then(d=>{
+        (d.repos||d||[]).forEach(repo=>{
+            const name=repo.full_name||repo.name||'';
+            if(name && !added.has(name)){ added.add(name); const o=document.createElement('option'); o.value=name; o.textContent=name; sel.appendChild(o); }
+        });
+    }).catch(()=>{});
+
+    // Add repos from Notion projects
     api('/api/projects').then(d=>{
         pages(d).forEach(p=>{
             const name=np(p,'Name');
-            if(name && !Array.from(sel.options).some(o=>o.value===name)){
-                const o=document.createElement('option'); o.value=name; o.textContent=name; sel.appendChild(o);
-            }
+            if(name && !added.has(name)){ added.add(name); const o=document.createElement('option'); o.value=name; o.textContent=name; sel.appendChild(o); }
         });
     }).catch(()=>{});
+
+    // Restore previous selection
+    if(currentRepo && added.has(currentRepo)){ sel.value=currentRepo; }
 }
 
 // ── API ──
@@ -1317,7 +1352,13 @@ let ghRepos = [];
 async function fetchGitHub(){
     try{
         const repos = await api('/api/github/repos');
-        ghRepos = Array.isArray(repos) ? repos : [];
+        let allRepos = Array.isArray(repos) ? repos : [];
+
+        // Filter by selected repo if one is chosen
+        ghRepos = currentRepo
+            ? allRepos.filter(r => r.full_name === currentRepo)
+            : allRepos;
+
         $('ghRepoCount').textContent = ghRepos.length;
 
         let totalStars=0, totalOpenPrs=0, totalOpenIssues=0;
@@ -1328,7 +1369,7 @@ async function fetchGitHub(){
         // Repo cards
         if(ghRepos.length){
             $('ghRepoGrid').innerHTML = ghRepos.map(r=>`
-                <div class="repo-card" onclick="loadRepoDetail('${r.full_name}')">
+                <div class="repo-card${currentRepo===r.full_name?' selected':''}" onclick="loadRepoDetail('${r.full_name}')">
                     <h4>${r.name}</h4>
                     <div class="repo-desc">${r.description||'No description'}</div>
                     <div class="repo-stats">
@@ -1340,14 +1381,19 @@ async function fetchGitHub(){
                     </div>
                 </div>
             `).join('');
+        } else {
+            $('ghRepoGrid').innerHTML = '<div class="empty" style="padding:20px;text-align:center;">No repositories found. Add repos in Settings.</div>';
         }
 
-        // Load PRs for first repo by default
-        if(ghRepos.length){
-            await loadRepoPulls(ghRepos[0].full_name);
-            await loadRepoIssues(ghRepos[0].full_name);
-            await loadRepoCommits(ghRepos[0].full_name);
-            await loadRepoContributors(ghRepos[0].full_name);
+        // Load details for selected repo or first repo
+        const targetRepo = currentRepo || (ghRepos.length ? ghRepos[0].full_name : null);
+        if(targetRepo){
+            await Promise.all([
+                loadRepoPulls(targetRepo),
+                loadRepoIssues(targetRepo),
+                loadRepoCommits(targetRepo),
+                loadRepoContributors(targetRepo)
+            ]);
         }
     }catch(e){ console.warn('GitHub fetch:',e); }
 }

@@ -4,6 +4,9 @@
 
 [workspace]
 notion_workspace_id = ""
+# Optional: share a Notion page with your integration and paste its ID here.
+# If empty, ENGRAM creates a top-level page at the workspace root.
+parent_page_id = ""
 
 [auth]
 # Populated from the dashboard setup wizard — never commit real tokens.

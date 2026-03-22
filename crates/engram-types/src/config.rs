@@ -18,6 +18,10 @@ pub struct EngramConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorkspaceConfig {
     pub notion_workspace_id: String,
+    /// Optional parent page ID — if set, ENGRAM page is created under this page.
+    /// If empty, ENGRAM creates a top-level page at the workspace root.
+    #[serde(default)]
+    pub parent_page_id: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
