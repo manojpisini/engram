@@ -548,7 +548,7 @@ async fn find_or_create_engram_page(
         "icon": { "type": "emoji", "emoji": "🧠" },
         "cover": {
             "type": "external",
-            "external": { "url": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920&q=80" }
+            "external": { "url": "https://raw.githubusercontent.com/manojpisini/engram/main/images/engram_banner.png" }
         },
         "children": [
             {
