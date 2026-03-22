@@ -1044,8 +1044,12 @@ async function checkFirstStart(){
         const r=await fetch(c.apiUrl+'/api/setup/status',{signal:AbortSignal.timeout(3000)});
         if(!r.ok) return;
         const s=await r.json();
-        // Show first-start overlay if nothing is configured
-        if(!s.notion_ready && !s.github_ready && !s.ai_ready && !s.initialized){
+        // Show first-start overlay if databases aren't initialized
+        if(!s.initialized){
+            // Pre-fill fields if tokens already exist in config
+            if(s.notion_ready) $('fsNotionToken').value='••••••••';
+            if(s.github_ready) $('fsGithubToken').value='••••••••';
+            if(s.ai_ready) $('fsAnthropicKey').value='••••••••';
             $('firstStartOverlay').style.display='flex';
         }
     }catch{
@@ -1064,13 +1068,13 @@ window.submitFirstStart = async function(){
     status.textContent='Saving configuration...'; status.style.color='var(--accent)';
     const body={};
     const nt=$('fsNotionToken').value.trim();
-    if(nt) body.notion_token=nt;
+    if(nt && !nt.startsWith('••')) body.notion_token=nt;
     const gt=$('fsGithubToken').value.trim();
-    if(gt) body.github_token=gt;
+    if(gt && !gt.startsWith('••')) body.github_token=gt;
     const gr=$('fsGithubRepos').value.trim();
     if(gr) body.github_repos=gr.split(',').map(s=>s.trim()).filter(Boolean);
     const ak=$('fsAnthropicKey').value.trim();
-    if(ak) body.anthropic_api_key=ak;
+    if(ak && !ak.startsWith('••')) body.anthropic_api_key=ak;
     const sh=$('fsServerHost').value.trim();
     if(sh) body.server_host=sh;
     const sp=$('fsServerPort').value.trim();
@@ -1080,8 +1084,8 @@ window.submitFirstStart = async function(){
     const ppid=$('fsParentPageId').value.trim().replace(/[^a-fA-F0-9-]/g,'');
     if(ppid) body.parent_page_id=ppid;
 
-    if(!nt){
-        status.textContent='Notion integration token is required to continue.';
+    if(!nt || (!nt.startsWith('ntn_') && !nt.startsWith('••'))){
+        status.textContent='Notion integration token is required. It starts with ntn_';
         status.style.color='var(--red)';
         return;
     }
