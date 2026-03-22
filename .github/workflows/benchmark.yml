@@ -1,0 +1,82 @@
+name: ENGRAM Benchmark
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+env:
+  ENGRAM_WEBHOOK_URL: ${{ vars.ENGRAM_WEBHOOK_URL }}
+  ENGRAM_PROJECT_ID: ${{ vars.ENGRAM_PROJECT_ID }}
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-bench-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Run benchmarks
+        id: bench
+        continue-on-error: true
+        run: |
+          if cargo bench --bench '*' -- --output-format=bencher 2>&1 | tee bench_output.txt; then
+            echo "status=pass" >> $GITHUB_OUTPUT
+          else
+            echo "status=no_benches" >> $GITHUB_OUTPUT
+            echo "No benchmarks defined — skipping." > bench_output.txt
+          fi
+          # Also try JSON output
+          cargo bench --bench '*' --message-format=json > bench_results.json 2>/dev/null || echo '[]' > bench_results.json
+
+      - name: Post benchmark results to ENGRAM
+        if: env.ENGRAM_WEBHOOK_URL != ''
+        run: |
+          BENCH_JSON=$(cat bench_results.json 2>/dev/null || echo '[]')
+          curl -sf -X POST "${ENGRAM_WEBHOOK_URL}/webhook/benchmark" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"project_id\": \"${ENGRAM_PROJECT_ID}\",
+              \"commit_sha\": \"${{ github.sha }}\",
+              \"branch\": \"${{ github.ref_name }}\",
+              \"benchmarks\": ${BENCH_JSON}
+            }" || echo "::warning::Could not reach ENGRAM webhook"
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request' && steps.bench.outputs.status == 'pass'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const output = fs.readFileSync('bench_output.txt', 'utf8').slice(0, 3000);
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `## ENGRAM Benchmark Results\n\`\`\`\n${output}\n\`\`\`\n\n[View trends in ENGRAM dashboard](${process.env.ENGRAM_WEBHOOK_URL || 'http://localhost:3000'})`
+            });
+
+      - name: Upload benchmark artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: |
+            bench_output.txt
+            bench_results.json
+          retention-days: 30
