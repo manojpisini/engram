@@ -209,6 +209,16 @@
         .fs-actions .btn { padding:14px 48px; font-size:14px; border-radius:10px; letter-spacing:1px; }
         .fs-actions .btn-ghost { padding:14px 32px; }
         .fs-status { text-align:center; font-size:12px; margin-top:16px; min-height:20px; }
+        .fs-help-toggle { display:inline-flex; align-items:center; gap:4px; font-size:10px; color:var(--accent); cursor:pointer; margin-top:8px; user-select:none; font-weight:600; letter-spacing:0.5px; }
+        .fs-help-toggle:hover { text-decoration:underline; }
+        .fs-help-toggle .arrow { transition:transform 0.2s; display:inline-block; }
+        .fs-help-toggle.open .arrow { transform:rotate(90deg); }
+        .fs-help-box { display:none; margin-top:10px; padding:14px 16px; background:rgba(245,158,11,0.04); border:1px solid rgba(245,158,11,0.12); border-radius:8px; font-size:11px; color:var(--text2); line-height:1.7; }
+        .fs-help-box.open { display:block; }
+        .fs-help-box ol { margin:6px 0 0 18px; padding:0; }
+        .fs-help-box ol li { margin-bottom:4px; }
+        .fs-help-box code { font-size:10px; padding:1px 5px; }
+        .fs-help-box .help-warn { color:var(--accent); font-size:10px; margin-top:8px; }
         .fs-progress { width:100%; max-width:400px; margin:0 auto 24px; display:flex; align-items:center; gap:0; }
         .fs-progress-step { flex:1; text-align:center; position:relative; }
         .fs-progress-step::before { content:''; position:absolute; top:12px; left:0; right:0; height:2px; background:var(--border); z-index:0; }
@@ -263,16 +273,37 @@
             <div class="fs-step">
                 <div class="fs-step-num">STEP 1</div>
                 <h3>Notion Workspace</h3>
-                <div class="fs-desc">Connect your Notion workspace to store all engineering intelligence data.</div>
+                <div class="fs-desc">Connect your Notion workspace to store all engineering intelligence data. ENGRAM will create 23 databases automatically.</div>
                 <div class="form-group">
                     <label>Integration Token</label>
                     <input id="fsNotionToken" type="password" placeholder="ntn_..." autocomplete="off" spellcheck="false">
-                    <div class="form-hint">Create at <a href="https://www.notion.so/profile/integrations" target="_blank">notion.so/profile/integrations</a> — give full access to a workspace</div>
+                    <div class="form-hint">Starts with <code>ntn_</code> — this is your Internal Integration Secret</div>
+                    <div class="fs-help-toggle" onclick="toggleHelp(this)"><span class="arrow">&#9654;</span> How to get this</div>
+                    <div class="fs-help-box">
+                        <ol>
+                            <li>Go to <a href="https://www.notion.so/profile/integrations" target="_blank">notion.so/profile/integrations</a></li>
+                            <li>Click <strong>"+ New integration"</strong></li>
+                            <li>Name it <code>ENGRAM</code>, select your workspace</li>
+                            <li>Click <strong>"Submit"</strong></li>
+                            <li>Copy the <strong>Internal Integration Secret</strong> (starts with <code>ntn_</code>)</li>
+                            <li>Under <strong>Capabilities</strong>, enable: Read, Update, Insert content</li>
+                        </ol>
+                        <div class="help-warn">&#9888; You must also share your Notion page with the integration: open any page &rarr; ••• &rarr; "Add connections" &rarr; select ENGRAM</div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Workspace ID</label>
                     <input id="fsWorkspaceId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" spellcheck="false">
-                    <div class="form-hint">Found in your Notion workspace URL after the workspace name</div>
+                    <div class="form-hint">UUID format — found in Notion Settings or your workspace URL</div>
+                    <div class="fs-help-toggle" onclick="toggleHelp(this)"><span class="arrow">&#9654;</span> How to find this</div>
+                    <div class="fs-help-box">
+                        <ol>
+                            <li>Open <a href="https://www.notion.so" target="_blank">notion.so</a> in your browser</li>
+                            <li>Click <strong>Settings &amp; members</strong> (gear icon in sidebar)</li>
+                            <li>Go to <strong>Settings</strong> tab &rarr; scroll down to find <strong>Workspace ID</strong></li>
+                        </ol>
+                        Or check your URL: <code>notion.so/<strong>workspace-name</strong>/...</code> — the ID is shown in Settings.
+                    </div>
                 </div>
             </div>
 
@@ -284,17 +315,52 @@
                 <div class="form-group">
                     <label>Personal Access Token</label>
                     <input id="fsGithubToken" type="password" placeholder="github_pat_..." autocomplete="off" spellcheck="false">
-                    <div class="form-hint">Create at <a href="https://github.com/settings/tokens?type=beta" target="_blank">github.com/settings/tokens</a> — needs <code>repo</code> and <code>read:org</code> scopes</div>
+                    <div class="form-hint">Starts with <code>github_pat_</code> (fine-grained) or <code>ghp_</code> (classic)</div>
+                    <div class="fs-help-toggle" onclick="toggleHelp(this)"><span class="arrow">&#9654;</span> How to get this</div>
+                    <div class="fs-help-box">
+                        <strong>Fine-grained token (recommended):</strong>
+                        <ol>
+                            <li>Go to <a href="https://github.com/settings/tokens?type=beta" target="_blank">github.com/settings/tokens</a> (Fine-grained)</li>
+                            <li>Click <strong>"Generate new token"</strong></li>
+                            <li>Name: <code>ENGRAM</code>, Expiration: 90 days</li>
+                            <li>Repository access: select repos you want to monitor</li>
+                            <li>Permissions: <code>Contents</code> (Read), <code>Pull requests</code> (Read), <code>Issues</code> (Read), <code>Webhooks</code> (Read &amp; Write)</li>
+                            <li>Click <strong>"Generate token"</strong> and copy it</li>
+                        </ol>
+                        <strong>Classic token (alternative):</strong>
+                        <ol>
+                            <li>Go to <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a> (Classic)</li>
+                            <li>Scopes: <code>repo</code>, <code>read:org</code>, <code>admin:repo_hook</code></li>
+                        </ol>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Repositories to Track</label>
                     <input id="fsGithubRepos" placeholder="owner/repo, owner/other-repo" spellcheck="false">
-                    <div class="form-hint hint-accent">After setup, add a webhook URL to each repo&rsquo;s GitHub Settings &rarr; Webhooks. The URL will be shown in Settings.</div>
+                    <div class="form-hint">Comma-separated list of <code>owner/repo</code> names. Example: <code>manojpisini/engram, manojpisini/ipl-viz</code></div>
                 </div>
                 <div class="form-group">
                     <label>Webhook Secret</label>
                     <input id="fsWebhookSecret" placeholder="your-webhook-secret" spellcheck="false">
-                    <div class="form-hint">Random string for HMAC-SHA256 verification. Use the same secret in GitHub repo &rarr; Settings &rarr; Webhooks.</div>
+                    <div class="form-hint">A random string used to verify webhook payloads via HMAC-SHA256</div>
+                    <div class="fs-help-toggle" onclick="toggleHelp(this)"><span class="arrow">&#9654;</span> How to generate &amp; configure</div>
+                    <div class="fs-help-box">
+                        <strong>Generate a secret:</strong>
+                        <ol>
+                            <li>Run in terminal: <code>openssl rand -hex 32</code> (Linux/macOS)</li>
+                            <li>Or PowerShell: <code>-join((1..64)|%{'{0:x}'-f(Get-Random -Max 16)})</code></li>
+                            <li>Or use any password generator (32+ characters)</li>
+                        </ol>
+                        <strong>Configure in GitHub:</strong>
+                        <ol>
+                            <li>Go to your repo &rarr; <strong>Settings</strong> &rarr; <strong>Webhooks</strong> &rarr; <strong>Add webhook</strong></li>
+                            <li>Payload URL: <code>http://YOUR_SERVER:3000/webhook/github</code></li>
+                            <li>Content type: <code>application/json</code></li>
+                            <li>Secret: <strong>paste the same secret you enter here</strong></li>
+                            <li>Events: select "Send me everything" or pick Push, PRs, Releases</li>
+                        </ol>
+                        <div class="help-warn">&#9888; The secret must match exactly in both ENGRAM and GitHub. If left empty, webhooks will accept unsigned payloads (not recommended for production).</div>
+                    </div>
                 </div>
             </div>
 
@@ -306,7 +372,17 @@
                 <div class="form-group">
                     <label>Anthropic API Key</label>
                     <input id="fsAnthropicKey" type="password" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
-                    <div class="form-hint">Get your key from <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com/settings/keys</a></div>
+                    <div class="form-hint">Starts with <code>sk-ant-</code> — this powers all 9 intelligence agents</div>
+                    <div class="fs-help-toggle" onclick="toggleHelp(this)"><span class="arrow">&#9654;</span> How to get this</div>
+                    <div class="fs-help-box">
+                        <ol>
+                            <li>Go to <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com/settings/keys</a></li>
+                            <li>Sign in or create an Anthropic account</li>
+                            <li>Click <strong>"Create Key"</strong></li>
+                            <li>Name it <code>ENGRAM</code> and copy the key</li>
+                        </ol>
+                        <div class="help-warn">&#9888; You need API credits in your Anthropic account. ENGRAM uses <code>claude-sonnet-4-20250514</code> by default. Each webhook event costs roughly $0.01–0.05 in API usage depending on payload size.</div>
+                    </div>
                 </div>
             </div>
 
@@ -314,17 +390,23 @@
             <div class="fs-step">
                 <div class="fs-step-num">OPTIONAL</div>
                 <h3>Server Configuration</h3>
-                <div class="fs-desc">Defaults work for local use. Configure for server or custom network setups.</div>
+                <div class="fs-desc">Defaults work for local use. Only change these if deploying to a server or using a custom port.</div>
                 <div class="fs-server-grid">
                     <div class="form-group">
                         <label>Host / IP Address</label>
                         <input id="fsServerHost" placeholder="127.0.0.1" spellcheck="false">
-                        <div class="form-hint">Default: <code>127.0.0.1</code> (local). Use <code>0.0.0.0</code> for all interfaces.</div>
+                        <div class="form-hint"><code>127.0.0.1</code> = localhost only &bull; <code>0.0.0.0</code> = accept from all networks</div>
                     </div>
                     <div class="form-group">
                         <label>Port</label>
                         <input id="fsServerPort" type="number" placeholder="3000" min="1" max="65535">
+                        <div class="form-hint">Default: <code>3000</code></div>
                     </div>
+                </div>
+                <div class="fs-help-toggle" onclick="toggleHelp(this)" style="margin-top:12px;"><span class="arrow">&#9654;</span> Localhost vs Server mode</div>
+                <div class="fs-help-box">
+                    <strong>Localhost mode (default):</strong> ENGRAM runs on your machine. GitHub can't reach <code>localhost</code>, so use the <code>.github/workflows/engram-notify.yml</code> GitHub Action to forward events from CI to your local instance.<br><br>
+                    <strong>Server mode:</strong> Deploy ENGRAM on a VPS/cloud server with a public IP or domain. Set host to <code>0.0.0.0</code> and configure your GitHub webhook URL as <code>http://your-server:3000/webhook/github</code>. Use a reverse proxy (nginx/caddy) for HTTPS.
                 </div>
             </div>
 
@@ -964,6 +1046,12 @@ async function checkFirstStart(){
         // Server not reachable yet — don't show overlay
     }
 }
+
+window.toggleHelp = function(el){
+    el.classList.toggle('open');
+    const box = el.nextElementSibling;
+    if(box) box.classList.toggle('open');
+};
 
 window.submitFirstStart = async function(){
     const status=$('fsStatus');
