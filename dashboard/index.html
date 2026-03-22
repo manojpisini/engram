@@ -291,8 +291,28 @@
                         <div class="help-warn">&#9888; You must also share your Notion page with the integration: open any page &rarr; ••• &rarr; "Add connections" &rarr; select ENGRAM</div>
                     </div>
                 </div>
-                <div style="margin-top:14px;padding:10px 14px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);border-radius:8px;">
-                    <div style="font-size:11px;color:var(--green);">&#10003; ENGRAM will automatically create a styled parent page at your workspace root with all 23 databases nested inside.</div>
+                <div class="form-group" style="margin-top:14px;">
+                    <label>Parent Page ID <span style="color:var(--red);font-weight:700;">*</span></label>
+                    <input id="fsParentPageId" placeholder="Paste the Notion page ID here" spellcheck="false">
+                    <div class="form-hint">ENGRAM creates all 23 databases as children of this page</div>
+                    <div class="fs-help-toggle" onclick="toggleHelp(this)"><span class="arrow">&#9654;</span> How to get the Page ID</div>
+                    <div class="fs-help-box">
+                        <ol>
+                            <li>In Notion, create a new blank page (or use any existing page)</li>
+                            <li>Click <strong>•••</strong> (top right) &rarr; <strong>"Add connections"</strong> &rarr; select your <strong>ENGRAM</strong> integration</li>
+                            <li>Click <strong>"Share"</strong> (top right) &rarr; <strong>"Copy link"</strong></li>
+                            <li>The link looks like: <code>notion.so/Your-Page-Title-<strong>abc123def456...</strong></code></li>
+                            <li>The <strong>last 32 hex characters</strong> (after the final dash) is your Page ID</li>
+                        </ol>
+                        <div class="help-warn">&#9888; The page MUST be shared with your ENGRAM integration, otherwise database creation will fail.</div>
+                        <div style="margin-top:8px;padding:8px;background:rgba(245,158,11,0.08);border-radius:6px;font-size:11px;">
+                            <strong>Tip:</strong> You can also get the ID from the URL bar — open the page in Notion, and copy the 32-character hex string from the URL.
+                            Format it as: <code>xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</code> (with dashes) or without — both work.
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top:10px;padding:10px 14px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);border-radius:8px;">
+                    <div style="font-size:11px;color:var(--green);">&#10003; ENGRAM will create a styled page with cover image, icon, and all 23 databases nested inside your shared page.</div>
                 </div>
             </div>
 
@@ -1057,9 +1077,21 @@ window.submitFirstStart = async function(){
     if(sp) body.server_port=parseInt(sp,10);
     const ws=$('fsWebhookSecret').value.trim();
     if(ws) body.webhook_secret=ws;
+    const ppid=$('fsParentPageId').value.trim().replace(/[^a-fA-F0-9-]/g,'');
+    if(ppid) body.parent_page_id=ppid;
 
     if(!nt){
         status.textContent='Notion integration token is required to continue.';
+        status.style.color='var(--red)';
+        return;
+    }
+    if(!ppid){
+        status.textContent='Parent Page ID is required. Create a Notion page, share it with ENGRAM, and paste the page ID.';
+        status.style.color='var(--red)';
+        return;
+    }
+    if(ppid.replace(/-/g,'').length!==32){
+        status.textContent='Invalid Page ID. It should be a 32-character hex string (with or without dashes).';
         status.style.color='var(--red)';
         return;
     }

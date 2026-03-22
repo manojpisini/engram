@@ -18,6 +18,8 @@ pub struct EngramConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorkspaceConfig {
     pub notion_workspace_id: String,
+    #[serde(default)]
+    pub parent_page_id: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

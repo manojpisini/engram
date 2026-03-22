@@ -1,9 +1,12 @@
 # ENGRAM Runtime Configuration
-# All tokens and connections are configured from the dashboard setup wizard.
-# Environment variables are also supported as an optional override for server deployments.
+# Copy this file to engram.toml and fill in your values.
+# All tokens can also be configured from the dashboard setup wizard.
 
 [workspace]
 notion_workspace_id = ""
+# Required: share a Notion page with your ENGRAM integration, then paste the page ID here.
+# ENGRAM creates all 23 databases under this page.
+parent_page_id = ""
 
 [auth]
 # Populated from the dashboard setup wizard — never commit real tokens.
@@ -42,25 +45,3 @@ max_tokens = 4096
 # Database IDs — auto-populated when you run Notion setup from dashboard
 [databases]
 projects = ""
-rfcs = ""
-rfc_comments = ""
-benchmarks = ""
-regressions = ""
-performance_baselines = ""
-dependencies = ""
-audit_runs = ""
-modules = ""
-onboarding_tracks = ""
-onboarding_steps = ""
-knowledge_gaps = ""
-env_config = ""
-config_snapshots = ""
-secret_rotation_log = ""
-pr_reviews = ""
-review_playbook = ""
-review_patterns = ""
-tech_debt = ""
-health_reports = ""
-engineering_digest = ""
-events = ""
-releases = ""

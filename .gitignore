@@ -1,6 +1,7 @@
 /target
 .env
 forge.toml
+engram.toml
 *.swp
 *.swo
 *~

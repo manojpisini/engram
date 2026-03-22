@@ -18,14 +18,14 @@ pub type ProgressFn = Box<dyn Fn(usize, usize, &str) + Send + Sync>;
 /// Returns the populated DatabaseIds and the parent page ID.
 pub async fn create_all_databases(
     notion: &NotionMcpClient,
-    _workspace_id: &str,
+    parent_page_id: &str,
 ) -> Result<DatabaseIds> {
     let mut db = DatabaseIds::default();
     let total = 23;
     let mut step = 0;
 
-    // Auto-create or find the ENGRAM parent page at workspace root
-    let engram_page_id = find_or_create_engram_page(notion).await
+    // Create or find ENGRAM page under the parent
+    let engram_page_id = find_or_create_engram_page(notion, parent_page_id).await
         .context("Failed to create ENGRAM parent page. Make sure your Notion integration token is valid and has full access to the workspace.")?;
     info!("[Setup] Using ENGRAM parent page: {}", engram_page_id);
 
@@ -504,13 +504,22 @@ fn extract_id(result: &serde_json::Value) -> String {
         .to_string()
 }
 
-/// Find an existing "ENGRAM" page in the workspace, or create one at the workspace root.
-/// No parent page ID needed — creates a top-level page automatically.
+/// Create all databases under the given parent page ID.
+/// The user provides a Notion page ID (shared with the ENGRAM integration).
+/// ENGRAM creates a styled child page with all 23 databases nested inside.
 async fn find_or_create_engram_page(
     notion: &NotionMcpClient,
+    parent_page_id: &str,
 ) -> Result<String> {
-    // First, try to search for an existing ENGRAM page
-    info!("[Setup] Searching for existing ENGRAM parent page...");
+    if parent_page_id.is_empty() {
+        anyhow::bail!(
+            "Parent Page ID is required. In Notion, create a page, share it with your ENGRAM integration \
+             (••• → Add connections → ENGRAM), then paste the page ID in the setup form."
+        );
+    }
+
+    // First, check if an ENGRAM page already exists under this parent
+    info!("[Setup] Searching for existing ENGRAM page...");
     if let Ok(search_result) = notion.search("ENGRAM", Some(json!({
         "value": "page",
         "property": "object"
@@ -533,10 +542,10 @@ async fn find_or_create_engram_page(
         }
     }
 
-    // No existing page found — create one at workspace root with rich styling
-    info!("[Setup] Creating new ENGRAM parent page at workspace root...");
+    // Create ENGRAM page under the provided parent page
+    info!("[Setup] Creating ENGRAM page under parent {}...", parent_page_id);
     let page_payload = json!({
-        "parent": { "type": "workspace", "workspace": true },
+        "parent": { "type": "page_id", "page_id": parent_page_id },
         "properties": {
             "title": {
                 "title": [{
@@ -702,7 +711,7 @@ async fn find_or_create_engram_page(
     });
 
     let result = notion.post_raw("/pages", &page_payload).await
-        .context("Failed to create ENGRAM parent page at workspace root. Ensure the integration token is valid and has 'Insert content' capability enabled.")?;
+        .context("Failed to create ENGRAM page. Ensure your integration has 'Insert content' capability and the parent page is shared with it.")?;
 
     let page_id = extract_id(&result);
     if page_id == "unknown" || page_id.is_empty() {
