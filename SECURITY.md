@@ -56,4 +56,4 @@ ENGRAM handles sensitive data including API tokens, webhook secrets, and reposit
 
 ## Dependencies
 
-ENGRAM uses `cargo-audit` for automated dependency vulnerability scanning. The `ci/audit.yml` workflow runs daily and on every dependency change.
+ENGRAM uses `cargo-audit` for automated dependency vulnerability scanning. The `.github/workflows/audit.yml` workflow runs daily and on every dependency change.

@@ -79,7 +79,7 @@ Run ENGRAM
               │
               ├──> Add webhook URL to each GitHub repo's Settings → Webhooks
               │    (Server mode: https://your-domain/webhook/github)
-              │    (Localhost mode: use ci/engram-notify.yml workflow instead)
+              │    (Localhost mode: use .github/workflows/engram-notify.yml workflow instead)
               │
               ├──> GitHub starts sending webhook events
               │    └──> Agents automatically process events and write to Notion
@@ -185,7 +185,7 @@ Add a webhook in each GitHub repo:
 Copy the CI workflow into each tracked repo:
 
 ```bash
-cp ci/engram-notify.yml your-repo/.github/workflows/
+cp .github/workflows/engram-notify.yml your-repo/.github/workflows/
 ```
 
 Then set these as **GitHub repository variables** (Settings → Secrets and variables → Actions → Variables):
@@ -200,15 +200,15 @@ The workflow posts PR events to ENGRAM on every PR open/update/merge.
 
 Drop these GitHub Actions workflows into your tracked repos to feed additional data to ENGRAM:
 
-### Security Audits — `ci/audit.yml`
+### Security Audits — `.github/workflows/audit.yml`
 
 Runs `cargo-audit` daily and on every dependency change (`Cargo.lock`, `package-lock.json`, `requirements.txt`, `go.sum`). Posts vulnerability data to ENGRAM, where the **Shield** agent triages, deduplicates, and tracks CVEs in Notion. Comments on PRs with vulnerability counts.
 
-### Benchmarks — `ci/benchmark.yml`
+### Benchmarks — `.github/workflows/benchmark.yml`
 
 Runs Criterion.rs benchmarks on every push to `main` and on PRs. Posts results to ENGRAM, where the **Pulse** agent detects regressions against stored baselines. Comments on PRs with benchmark results.
 
-### PR Notifications — `ci/engram-notify.yml`
+### PR Notifications — `.github/workflows/engram-notify.yml`
 
 Posts PR open/update/merge events with diff stats (additions, deletions, files changed) and RFC references. Triggers the **Review** agent for code analysis, **Decisions** for RFC drift scoring, and **Timeline** for event correlation.
 
@@ -268,7 +268,7 @@ rfc_stale_days = 14            # Mark RFCs stale after this many days
 
 ### Localhost (Default)
 
-ENGRAM binds to `127.0.0.1:3000` by default. This is sufficient for individual use. Use the `ci/engram-notify.yml` workflow to send GitHub events from CI to your local instance.
+ENGRAM binds to `127.0.0.1:3000` by default. This is sufficient for individual use. Use the `.github/workflows/engram-notify.yml` workflow to send GitHub events from CI to your local instance.
 
 ### Server / Domain
 
@@ -328,7 +328,7 @@ engram/
 │   ├── engram-timeline/      Layer 8 — Event correlation, audit trail
 │   └── engram-release/       Layer 9 — Release notes, changelog
 ├── dashboard/                Single-page dashboard (vanilla HTML/JS/CSS)
-├── ci/                       GitHub Actions workflows for tracked repos
+├── .github/workflows/        GitHub Actions workflows (release, audit, benchmark, notify)
 │   ├── audit.yml             Security audit → Shield agent
 │   ├── benchmark.yml         Benchmarks → Pulse agent
 │   └── engram-notify.yml     PR events → Review, Decisions, Timeline agents

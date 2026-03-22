@@ -688,7 +688,7 @@
         <div class="step-grid">
             <div class="step-card"><h5><span class="step-num">1</span>Configure</h5><p>Run ENGRAM and open the dashboard. The first-start wizard walks you through connecting Notion, GitHub, and Claude.</p></div>
             <div class="step-card"><h5><span class="step-num">2</span>Initialize</h5><p>The setup wizard creates all 22 Notion databases with schemas, relations, and sample data automatically.</p></div>
-            <div class="step-card"><h5><span class="step-num">3</span>Webhooks</h5><p>Add the webhook URL to each repo's GitHub Settings &rarr; Webhooks, or use the <code>ci/engram-notify.yml</code> GitHub Action.</p></div>
+            <div class="step-card"><h5><span class="step-num">3</span>Webhooks</h5><p>Add the webhook URL to each repo's GitHub Settings &rarr; Webhooks, or use the <code>.github/workflows/engram-notify.yml</code> GitHub Action.</p></div>
             <div class="step-card"><h5><span class="step-num">4</span>Monitor</h5><p>Data flows in via webhooks. Intelligence layers analyze and write to Notion. Dashboard updates automatically.</p></div>
         </div>
     </div>
@@ -782,7 +782,7 @@
                         <button class="btn btn-sm btn-ghost" onclick="navigator.clipboard.writeText($('webhookUrlValue').textContent)" style="white-space:nowrap;">Copy</button>
                     </div>
                     <p style="font-size:10px;color:var(--text3);">Content type: <code>application/json</code> &mdash; Events: Pull requests, Pushes</p>
-                    <p style="font-size:10px;color:var(--accent);margin-top:4px;">For localhost: use <code>ci/engram-notify.yml</code> GitHub Action workflow instead (no tunnel needed).</p>
+                    <p style="font-size:10px;color:var(--accent);margin-top:4px;">For localhost: use <code>.github/workflows/engram-notify.yml</code> GitHub Action workflow instead (no tunnel needed).</p>
                 </div>
             </div>
             <div class="form-group">

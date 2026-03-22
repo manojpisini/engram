@@ -99,7 +99,7 @@ pub async fn start_scheduler(state: Arc<AppState>) -> Result<()> {
         .await?;
 
     // GitHub data arrives via webhooks (configured per-repo by the user)
-    // — no polling needed. See ci/engram-notify.yml for the GitHub Actions workflow.
+    // — no polling needed. See .github/workflows/engram-notify.yml for the GitHub Actions workflow.
 
     sched.start().await?;
     info!("Cron scheduler started with 5 scheduled jobs");
