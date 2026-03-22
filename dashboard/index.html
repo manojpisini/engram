@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ENGRAM / Engineering Intelligence Platform</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg:       #0a0a0a;
+            --surface:  #111111;
+            --surface2: #181818;
+            --border:   #1e1e1e;
+            --border2:  #2a2a2a;
+            --text:     #d4d4d4;
+            --text2:    #888;
+            --text3:    #555;
+            --accent:   #f59e0b;
+            --accent2:  #d97706;
+            --green:    #22c55e;
+            --red:      #ef4444;
+            --blue:     #3b82f6;
+            --purple:   #8b5cf6;
+            --cyan:     #06b6d4;
+            --pink:     #ec4899;
+            --radius:   10px;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { background:var(--bg); color:var(--text); font-family:'Inter','SF Pro Display','Segoe UI',system-ui,sans-serif; font-size:13px; line-height:1.5; min-height:100vh; }
+        a { color:var(--accent); text-decoration:none; }
+        a:hover { text-decoration:underline; }
+        code { background:var(--surface2); padding:2px 6px; border-radius:4px; font-size:12px; font-family:'JetBrains Mono','Fira Code',monospace; color:var(--accent); }
+        pre { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin:12px 0; overflow-x:auto; font-size:12px; line-height:1.6; color:var(--text2); font-family:'JetBrains Mono','Fira Code',monospace; }
+
+        /* ── Top bar ── */
+        .topbar { display:flex; align-items:center; justify-content:space-between; padding:0 28px; height:52px; border-bottom:1px solid var(--border); background:var(--surface); position:sticky; top:0; z-index:100; }
+        .topbar-left { display:flex; align-items:center; gap:16px; }
+        .topbar .logo { font-size:15px; font-weight:700; color:var(--accent); letter-spacing:3px; }
+        .topbar .sep { width:1px; height:20px; background:var(--border2); }
+        .topbar-right { display:flex; align-items:center; gap:16px; }
+        .status-badge { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text3); }
+        .status-dot { width:7px; height:7px; border-radius:50%; background:var(--green); }
+        .status-dot.off { background:var(--red); }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        .status-dot.on { animation:pulse 2s infinite; }
+
+        /* ── Repo selector ── */
+        .repo-select { background:var(--surface2); border:1px solid var(--border2); border-radius:6px; padding:6px 12px; color:var(--text); font-size:12px; font-family:inherit; cursor:pointer; min-width:180px; }
+        .repo-select:focus { outline:none; border-color:var(--accent); }
+        .repo-select option { background:var(--surface); }
+
+        /* ── Sidebar + Content ── */
+        .layout { display:flex; min-height:calc(100vh - 52px); }
+        .sidebar { width:200px; border-right:1px solid var(--border); background:var(--surface); padding:16px 0; flex-shrink:0; position:sticky; top:52px; height:calc(100vh - 52px); overflow-y:auto; }
+        .sidebar-section { padding:0 16px; margin-bottom:16px; }
+        .sidebar-label { font-size:10px; text-transform:uppercase; letter-spacing:1.5px; color:var(--text3); margin-bottom:8px; font-weight:600; }
+        .sidebar-item { display:flex; align-items:center; gap:8px; padding:7px 16px; font-size:12px; color:var(--text2); cursor:pointer; border-radius:6px; margin:0 8px; transition:all 0.15s; }
+        .sidebar-item:hover { background:var(--surface2); color:var(--text); }
+        .sidebar-item.active { background:var(--accent); color:var(--bg); font-weight:600; }
+        .sidebar-icon { width:16px; text-align:center; font-size:13px; }
+        .content { flex:1; padding:28px; overflow-y:auto; }
+
+        /* ── Panels ── */
+        .panel { display:none; }
+        .panel.active { display:block; }
+
+        /* ── Grid ── */
+        .g { display:grid; gap:16px; }
+        .g1 { grid-template-columns:1fr; }
+        .g2 { grid-template-columns:repeat(2,1fr); }
+        .g3 { grid-template-columns:repeat(3,1fr); }
+        .g4 { grid-template-columns:repeat(4,1fr); }
+        .g6 { grid-template-columns:repeat(6,1fr); }
+        .span2 { grid-column:span 2; }
+        .span3 { grid-column:span 3; }
+        .full { grid-column:1/-1; }
+
+        /* ── Card ── */
+        .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; }
+        .card-glow { border-color:color-mix(in srgb, var(--accent) 20%, transparent); }
+        .card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+        .card-title { font-size:10px; text-transform:uppercase; letter-spacing:1.8px; color:var(--text3); font-weight:600; }
+        .card-title2 { font-size:13px; font-weight:600; color:var(--text); }
+
+        /* ── Stats ── */
+        .stat { text-align:center; }
+        .stat-val { font-size:32px; font-weight:700; line-height:1.1; }
+        .stat-label { font-size:10px; text-transform:uppercase; letter-spacing:1.2px; color:var(--text3); margin-top:6px; }
+        .stat-sm .stat-val { font-size:24px; }
+
+        /* ── Gauge ── */
+        .gauge { text-align:center; }
+        .gauge-val { font-size:36px; font-weight:700; line-height:1; }
+        .gauge-bar { height:3px; background:var(--border); border-radius:2px; margin-top:10px; overflow:hidden; }
+        .gauge-fill { height:100%; border-radius:2px; transition:width 0.8s ease; }
+
+        /* ── Colors ── */
+        .c-green { color:var(--green); }
+        .c-red { color:var(--red); }
+        .c-amber { color:var(--accent); }
+        .c-blue { color:var(--blue); }
+        .c-purple { color:var(--purple); }
+        .bg-green { background:var(--green); }
+        .bg-red { background:var(--red); }
+        .bg-amber { background:var(--accent); }
+        .bg-blue { background:var(--blue); }
+
+        /* ── Table ── */
+        .tbl { width:100%; border-collapse:collapse; font-size:12px; }
+        .tbl th { text-align:left; padding:8px 10px; color:var(--text3); font-weight:500; text-transform:uppercase; letter-spacing:1px; font-size:10px; border-bottom:1px solid var(--border); }
+        .tbl td { padding:8px 10px; border-bottom:1px solid var(--border); color:var(--text2); }
+        .tbl tr:hover td { background:var(--surface2); }
+        .tbl .mono { font-family:'JetBrains Mono',monospace; font-size:11px; }
+
+        /* ── Tags ── */
+        .tag { display:inline-block; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.8px; padding:2px 8px; border-radius:4px; }
+        .tag-critical { background:#7f1d1d; color:#fca5a5; }
+        .tag-high     { background:#78350f; color:#fcd34d; }
+        .tag-medium   { background:#1e3a5f; color:#93c5fd; }
+        .tag-low      { background:#14532d; color:#86efac; }
+        .tag-ok       { background:#14532d; color:#86efac; }
+        .tag-draft    { background:#1e1e2e; color:#a5b4fc; }
+        .tag-open     { background:#1e3a5f; color:#93c5fd; }
+        .tag-merged   { background:#3b0764; color:#c4b5fd; }
+        .tag-closed   { background:#4a1515; color:#fca5a5; }
+        .tag-new      { background:#1e3a5f; color:#93c5fd; }
+
+        /* ── Hero ── */
+        .hero-score { display:flex; align-items:center; gap:32px; }
+        .hero-num { font-size:64px; font-weight:800; line-height:1; min-width:100px; text-align:center; }
+        .hero-grade { font-size:18px; font-weight:700; margin-bottom:2px; }
+        .hero-narrative { font-size:13px; line-height:1.7; color:var(--text2); max-width:600px; }
+        .hero-narrative strong { color:var(--accent); }
+        .delta { font-size:12px; font-weight:600; }
+        .delta-up { color:var(--green); }
+        .delta-down { color:var(--red); }
+
+        /* ── Actions ── */
+        .action-list { display:grid; gap:10px; }
+        .action-item { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:14px 16px; border-left:3px solid var(--red); }
+        .action-item.warn { border-left-color:var(--accent); }
+        .action-item .a-title { font-size:13px; font-weight:500; margin-top:4px; }
+        .action-item .a-meta { font-size:11px; color:var(--text3); margin-top:3px; }
+
+        /* ── Chart ── */
+        .chart-wrap { position:relative; width:100%; }
+        .chart-wrap canvas { width:100% !important; }
+
+        /* ── Connection cards ── */
+        .conn-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:24px; display:flex; align-items:center; gap:20px; transition:border-color 0.2s; }
+        .conn-card:hover { border-color:var(--border2); }
+        .conn-icon { width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+        .conn-body { flex:1; }
+        .conn-body h4 { font-size:14px; font-weight:600; margin-bottom:4px; }
+        .conn-body p { font-size:11px; color:var(--text3); line-height:1.5; }
+        .conn-status { font-size:11px; font-weight:600; display:flex; align-items:center; gap:6px; }
+        .conn-status .dot { width:8px; height:8px; border-radius:50%; }
+
+        /* ── Layer grid ── */
+        .layer-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+        .layer-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; transition:border-color 0.2s; }
+        .layer-card:hover { border-color:var(--accent); }
+        .layer-card .lc-icon { font-size:20px; margin-bottom:6px; }
+        .layer-card h4 { font-size:13px; font-weight:700; color:var(--accent); margin-bottom:4px; }
+        .layer-card p { font-size:11px; color:var(--text3); line-height:1.5; }
+        .step-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; margin-top:16px; }
+        .step-card { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:16px; }
+        .step-num { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; background:var(--accent); color:var(--bg); border-radius:50%; font-size:11px; font-weight:700; margin-right:8px; }
+        .step-card h5 { font-size:13px; font-weight:600; margin-bottom:6px; display:flex; align-items:center; }
+        .step-card p { font-size:11px; color:var(--text3); line-height:1.5; }
+
+        /* ── Forms ── */
+        .form-group { margin-top:14px; }
+        .form-group label { display:block; font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--text3); margin-bottom:5px; font-weight:600; }
+        .form-group input, .form-group select, .form-group textarea { width:100%; background:var(--surface2); border:1px solid var(--border2); border-radius:6px; padding:9px 12px; color:var(--text); font-family:inherit; font-size:12px; }
+        .form-group input:focus, .form-group textarea:focus { outline:none; border-color:var(--accent); }
+        .btn { background:var(--accent); color:var(--bg); border:none; padding:10px 24px; border-radius:6px; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer; letter-spacing:0.5px; transition:background 0.15s; }
+        .btn:hover { background:var(--accent2); }
+        .btn-ghost { background:transparent; border:1px solid var(--border2); color:var(--text2); }
+        .btn-ghost:hover { border-color:var(--text2); color:var(--text); background:transparent; }
+        .btn-sm { padding:6px 16px; font-size:11px; }
+
+        /* ── First-start overlay ── */
+        .first-start-overlay { position:fixed; inset:0; z-index:9999; background:var(--bg); display:flex; align-items:center; justify-content:center; }
+        .first-start-box { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:48px; max-width:560px; width:90%; }
+        .first-start-box h1 { font-size:28px; font-weight:800; color:var(--accent); letter-spacing:3px; text-align:center; margin-bottom:4px; }
+        .first-start-box .tagline { text-align:center; color:var(--text3); font-size:12px; margin-bottom:32px; }
+        .first-start-box .fs-step { margin-bottom:20px; padding:16px; background:var(--surface2); border:1px solid var(--border); border-radius:10px; }
+        .first-start-box .fs-step h3 { font-size:13px; font-weight:700; color:var(--text); margin-bottom:10px; }
+        .first-start-box .fs-step .form-group { margin-top:10px; }
+        .first-start-box .fs-actions { display:flex; justify-content:center; gap:12px; margin-top:24px; }
+        .first-start-box .fs-status { text-align:center; font-size:11px; margin-top:12px; }
+
+        /* ── GitHub repo cards ── */
+        .repo-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; cursor:pointer; transition:border-color 0.2s; }
+        .repo-card:hover { border-color:var(--accent); }
+        .repo-card h4 { font-size:14px; font-weight:600; color:var(--text); margin-bottom:6px; }
+        .repo-card .repo-desc { font-size:11px; color:var(--text3); line-height:1.5; margin-bottom:10px; min-height:32px; }
+        .repo-stats { display:flex; gap:16px; font-size:11px; color:var(--text2); }
+        .repo-stats span { display:flex; align-items:center; gap:4px; }
+        .repo-lang { display:inline-block; width:8px; height:8px; border-radius:50%; }
+
+        /* ── Footer ── */
+        .footer { text-align:center; padding:28px; color:var(--text3); font-size:10px; letter-spacing:1px; border-top:1px solid var(--border); }
+        .empty { text-align:center; padding:40px; color:var(--text3); }
+        .empty-icon { font-size:32px; margin-bottom:8px; opacity:0.3; }
+
+        /* ── Responsive ── */
+        @media(max-width:1024px) { .g3,.g4,.g6{grid-template-columns:repeat(2,1fr);} .layer-grid{grid-template-columns:repeat(2,1fr);} }
+        @media(max-width:768px) { .sidebar{display:none;} .g2,.g3,.g4,.g6{grid-template-columns:1fr;} .span2,.span3{grid-column:1;} .layer-grid{grid-template-columns:1fr;} .hero-score{flex-direction:column;text-align:center;} }
+    </style>
+</head>
+<body>
+
+<!-- FIRST-START SETUP OVERLAY -->
+<div class="first-start-overlay" id="firstStartOverlay" style="display:none;">
+    <div class="first-start-box">
+        <h1>ENGRAM</h1>
+        <div class="tagline">Engineering Intelligence, etched in Notion</div>
+
+        <div class="fs-step">
+            <h3>1. Notion Workspace</h3>
+            <div class="form-group">
+                <label>Notion Integration Token</label>
+                <input id="fsNotionToken" type="password" placeholder="ntn_..." autocomplete="off">
+                <span style="font-size:10px;color:var(--text3)">Create at notion.so/profile/integrations — give full access to a workspace</span>
+            </div>
+            <div class="form-group">
+                <label>Workspace ID</label>
+                <input id="fsWorkspaceId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                <span style="font-size:10px;color:var(--text3)">Found in your Notion workspace URL</span>
+            </div>
+        </div>
+
+        <div class="fs-step">
+            <h3>2. GitHub</h3>
+            <div class="form-group">
+                <label>GitHub Personal Access Token</label>
+                <input id="fsGithubToken" type="password" placeholder="github_pat_..." autocomplete="off">
+                <span style="font-size:10px;color:var(--text3)">github.com/settings/tokens — needs repo, read:org scopes</span>
+            </div>
+            <div class="form-group">
+                <label>Repos to Track (comma-separated)</label>
+                <input id="fsGithubRepos" placeholder="owner/repo, owner/other-repo">
+                <span style="font-size:10px;color:var(--accent)">After setup, you'll need to add a webhook URL to each repo's GitHub Settings &rarr; Webhooks. The URL will be shown in Settings.</span>
+            </div>
+        </div>
+
+        <div class="fs-step">
+            <h3>3. AI Intelligence</h3>
+            <div class="form-group">
+                <label>Anthropic API Key</label>
+                <input id="fsAnthropicKey" type="password" placeholder="sk-ant-..." autocomplete="off">
+                <span style="font-size:10px;color:var(--text3)">From console.anthropic.com/settings/keys</span>
+            </div>
+        </div>
+
+        <div class="fs-step">
+            <h3>4. Server Configuration (optional)</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <div class="form-group">
+                    <label>Host / IP Address</label>
+                    <input id="fsServerHost" placeholder="127.0.0.1">
+                    <span style="font-size:10px;color:var(--text3)">Default: 127.0.0.1 (local only). Use 0.0.0.0 for all interfaces or a domain for server mode</span>
+                </div>
+                <div class="form-group">
+                    <label>Port</label>
+                    <input id="fsServerPort" type="number" placeholder="3000" min="1" max="65535">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Webhook Secret (optional)</label>
+                <input id="fsWebhookSecret" placeholder="your-webhook-secret">
+            </div>
+        </div>
+
+        <div class="fs-actions">
+            <button class="btn" onclick="submitFirstStart()">Save &amp; Initialize</button>
+            <button class="btn btn-ghost" onclick="skipFirstStart()">Skip for Now</button>
+        </div>
+        <div class="fs-status" id="fsStatus"></div>
+    </div>
+</div>
+
+<!-- TOP BAR -->
+<div class="topbar">
+    <div class="topbar-left">
+        <span class="logo">ENGRAM</span>
+        <span class="sep"></span>
+        <select class="repo-select" id="repoSelect" onchange="switchRepo(this.value)">
+            <option value="">All Repositories</option>
+        </select>
+    </div>
+    <div class="topbar-right">
+        <input type="text" id="notionSearch" placeholder="Search Notion..." style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:6px 12px;color:var(--text);font-size:12px;font-family:inherit;width:200px;" onkeydown="if(event.key==='Enter')doNotionSearch()">
+        <div class="status-badge">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="statusText">Connecting...</span>
+        </div>
+    </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+<!-- Sidebar -->
+<nav class="sidebar" id="sidebar">
+    <div class="sidebar-section"><div class="sidebar-label">Main</div></div>
+    <div class="sidebar-item active" data-tab="home"><span class="sidebar-icon">&#9776;</span>Home</div>
+    <div class="sidebar-item" data-tab="github"><span class="sidebar-icon">&#128025;</span>GitHub</div>
+    <div class="sidebar-item" data-tab="health"><span class="sidebar-icon">&#10084;</span>Health</div>
+    <div class="sidebar-item" data-tab="timeline"><span class="sidebar-icon">&#128337;</span>Timeline</div>
+    <div class="sidebar-section" style="margin-top:16px;"><div class="sidebar-label">Intelligence</div></div>
+    <div class="sidebar-item" data-tab="decisions"><span class="sidebar-icon">&#9878;</span>Decisions</div>
+    <div class="sidebar-item" data-tab="pulse"><span class="sidebar-icon">&#9889;</span>Pulse</div>
+    <div class="sidebar-item" data-tab="shield"><span class="sidebar-icon">&#9888;</span>Shield</div>
+    <div class="sidebar-item" data-tab="atlas"><span class="sidebar-icon">&#9776;</span>Atlas</div>
+    <div class="sidebar-item" data-tab="vault"><span class="sidebar-icon">&#128274;</span>Vault</div>
+    <div class="sidebar-item" data-tab="review"><span class="sidebar-icon">&#128269;</span>Review</div>
+    <div class="sidebar-section" style="margin-top:16px;"><div class="sidebar-label">System</div></div>
+    <div class="sidebar-item" data-tab="releases"><span class="sidebar-icon">&#128230;</span>Releases</div>
+    <div class="sidebar-item" data-tab="docs"><span class="sidebar-icon">&#128196;</span>Docs</div>
+    <div class="sidebar-item" data-tab="settings"><span class="sidebar-icon">&#9881;</span>Settings</div>
+</nav>
+
+<!-- Content -->
+<main class="content">
+
+<!-- ═══ HOME ═══ -->
+<div class="panel active" id="p-home">
+    <div style="text-align:center;padding:24px 0 8px;">
+        <div style="font-size:28px;font-weight:800;color:var(--accent);letter-spacing:3px;">ENGRAM</div>
+        <p style="color:var(--text2);max-width:560px;margin:8px auto 0;line-height:1.7;">
+            Engineering Intelligence Platform &mdash; 9 AI agents continuously analyze your
+            GitHub PRs, CI benchmarks, security audits, and write structured intelligence into 22 Notion databases.
+        </p>
+    </div>
+
+    <!-- Setup Wizard (shown when not initialized) -->
+    <div id="setupWizard" class="card full" style="display:none;margin:20px 0;border:1px solid var(--accent);background:linear-gradient(135deg,rgba(99,102,241,0.08),transparent);">
+        <div class="card-title" style="margin-bottom:8px;">Setup Wizard</div>
+        <p style="color:var(--text2);font-size:12px;margin-bottom:16px;">Complete these steps to get ENGRAM running. Each step activates when the previous one is done.</p>
+        <div class="g g4" style="gap:12px;">
+            <div class="card" id="wizStep1" style="border-left:3px solid var(--accent);">
+                <div style="font-weight:700;margin-bottom:6px;">1. Connect Notion</div>
+                <p style="font-size:11px;color:var(--text3);margin-bottom:8px;">Enter your Notion Integration Token and Workspace ID</p>
+                <button class="btn btn-sm" onclick="navTo('settings')">Open Settings</button>
+            </div>
+            <div class="card" id="wizStep2" style="opacity:0.5;">
+                <div style="font-weight:700;margin-bottom:6px;">2. Initialize Databases</div>
+                <p style="font-size:11px;color:var(--text3);margin-bottom:8px;">Create 23 Notion databases with schemas and relations</p>
+                <button class="btn btn-sm" id="wizInitBtn" onclick="runNotionSetup()" disabled>Initialize Notion</button>
+                <span id="wizInitStatus" style="font-size:11px;color:var(--text3);margin-left:8px;"></span>
+            </div>
+            <div class="card" id="wizStep3" style="opacity:0.5;">
+                <div style="font-weight:700;margin-bottom:6px;">3. Connect GitHub</div>
+                <p style="font-size:11px;color:var(--text3);margin-bottom:8px;">Enter GitHub PAT, repos, then add webhook URL to each repo</p>
+                <button class="btn btn-sm" onclick="navTo('settings')" disabled>Open Settings</button>
+            </div>
+            <div class="card" id="wizStep4" style="opacity:0.5;">
+                <div style="font-weight:700;margin-bottom:6px;">4. Connect AI</div>
+                <p style="font-size:11px;color:var(--text3);margin-bottom:8px;">Enter your Anthropic API key for Claude intelligence</p>
+                <button class="btn btn-sm" onclick="navTo('settings')" disabled>Open Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Connection Cards -->
+    <div class="card-title" style="margin:28px 0 12px;">Connections</div>
+    <div class="g g3" style="margin-bottom:20px;">
+        <div class="conn-card" id="connNotion">
+            <div class="conn-icon" style="background:#1e1e1e;">&#128221;</div>
+            <div class="conn-body">
+                <h4>Notion</h4>
+                <p id="connNotionDesc">Checking workspace connection...</p>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+                <div class="conn-status" id="connNotionStatus"></div>
+                <a id="connNotionOpen" href="#" target="_blank" class="btn btn-sm btn-ghost" style="display:none;font-size:10px;padding:4px 12px;">Open Notion</a>
+            </div>
+        </div>
+        <div class="conn-card" id="connGitHub">
+            <div class="conn-icon" style="background:#1e1e1e;">&#128025;</div>
+            <div class="conn-body">
+                <h4>GitHub</h4>
+                <p id="connGitHubDesc">Checking GitHub connection...</p>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+                <div class="conn-status" id="connGitHubStatus"></div>
+                <a id="connGitHubOpen" href="#" target="_blank" class="btn btn-sm btn-ghost" style="display:none;font-size:10px;padding:4px 12px;">Open GitHub</a>
+            </div>
+        </div>
+        <div class="conn-card" id="connClaude">
+            <div class="conn-icon" style="background:#1e1e1e;">&#129302;</div>
+            <div class="conn-body">
+                <h4>Claude AI</h4>
+                <p id="connClaudeDesc">Checking Claude API...</p>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+                <div class="conn-status" id="connClaudeStatus"></div>
+                <a id="connClaudeOpen" href="https://console.anthropic.com" target="_blank" class="btn btn-sm btn-ghost" style="display:none;font-size:10px;padding:4px 12px;">Open Console</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Status -->
+    <div class="card-title" style="margin-bottom:12px;">System Status</div>
+    <div class="g g4" style="margin-bottom:20px;">
+        <div class="card stat-sm"><div class="stat-val c-green" id="homeAgents">9</div><div class="stat-label">Active Agents</div></div>
+        <div class="card stat-sm"><div class="stat-val c-amber" id="homeDbs">22</div><div class="stat-label">Notion DBs</div></div>
+        <div class="card stat-sm"><div class="stat-val c-blue" id="homeRepos">0</div><div class="stat-label">Repos Tracked</div></div>
+        <div class="card stat-sm"><div class="stat-val" id="homeScore">--</div><div class="stat-label">Health Score</div></div>
+    </div>
+
+    <!-- Notion Data Hub -->
+    <div class="card-title" style="margin-bottom:12px;">Notion Data Hub</div>
+    <div class="g g3" style="margin-bottom:20px;">
+        <div class="card" style="cursor:pointer" onclick="navTo('decisions')">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                <span style="font-size:18px">&#9878;</span>
+                <span class="card-title2">RFCs &amp; Decisions</span>
+            </div>
+            <div class="g g2" style="gap:8px">
+                <div class="stat-sm"><div class="stat-val" id="homeRfcs" style="font-size:20px">--</div><div class="stat-label">Total RFCs</div></div>
+                <div class="stat-sm"><div class="stat-val c-green" id="homeRfcsApproved" style="font-size:20px">--</div><div class="stat-label">Approved</div></div>
+            </div>
+        </div>
+        <div class="card" style="cursor:pointer" onclick="navTo('shield')">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                <span style="font-size:18px">&#9888;</span>
+                <span class="card-title2">Vulnerabilities</span>
+            </div>
+            <div class="g g2" style="gap:8px">
+                <div class="stat-sm"><div class="stat-val c-red" id="homeVulnsCrit" style="font-size:20px">--</div><div class="stat-label">Critical</div></div>
+                <div class="stat-sm"><div class="stat-val c-amber" id="homeVulnsHigh" style="font-size:20px">--</div><div class="stat-label">High</div></div>
+            </div>
+        </div>
+        <div class="card" style="cursor:pointer" onclick="navTo('review')">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                <span style="font-size:18px">&#128269;</span>
+                <span class="card-title2">PR Reviews</span>
+            </div>
+            <div class="g g2" style="gap:8px">
+                <div class="stat-sm"><div class="stat-val" id="homePrs" style="font-size:20px">--</div><div class="stat-label">Reviewed</div></div>
+                <div class="stat-sm"><div class="stat-val c-red" id="homePrBlockers" style="font-size:20px">--</div><div class="stat-label">Blockers</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notion Search Results (hidden by default) -->
+    <div class="card full" id="searchResults" style="display:none;margin-bottom:20px;">
+        <div class="card-header"><div class="card-title">Notion Search Results</div><button class="btn btn-sm btn-ghost" onclick="$('searchResults').style.display='none'">Close</button></div>
+        <table class="tbl"><thead><tr><th>Page</th><th>Database</th><th>Last Edited</th></tr></thead><tbody id="tbSearch"></tbody></table>
+    </div>
+
+    <!-- Intelligence Layers -->
+    <div class="card-title" style="margin-bottom:12px;">Intelligence Layers</div>
+    <div class="layer-grid">
+        <div class="layer-card" onclick="navTo('decisions')"><div class="lc-icon">&#9878;</div><h4>Decisions</h4><p>RFC tracking, architectural drift detection, AI impact analysis</p></div>
+        <div class="layer-card" onclick="navTo('pulse')"><div class="lc-icon">&#9889;</div><h4>Pulse</h4><p>CI benchmarks, performance regressions, rolling baselines</p></div>
+        <div class="layer-card" onclick="navTo('shield')"><div class="lc-icon">&#9888;</div><h4>Shield</h4><p>CVE/vulnerability tracking, auto-triage, fix recommendations</p></div>
+        <div class="layer-card" onclick="navTo('atlas')"><div class="lc-icon">&#9776;</div><h4>Atlas</h4><p>Codebase mapping, knowledge gaps, onboarding tracks</p></div>
+        <div class="layer-card" onclick="navTo('vault')"><div class="lc-icon">&#128274;</div><h4>Vault</h4><p>Environment config, secrets rotation, policy enforcement</p></div>
+        <div class="layer-card" onclick="navTo('review')"><div class="lc-icon">&#128269;</div><h4>Review</h4><p>AI code review, blocker detection, tech debt tracking</p></div>
+    </div>
+</div>
+
+<!-- ═══ GITHUB ═══ -->
+<div class="panel" id="p-github">
+    <div class="card-title" style="margin-bottom:4px;">GitHub Integration</div>
+    <p style="color:var(--text3);font-size:12px;margin-bottom:20px;">Live data from connected GitHub repositories via webhooks. Add the webhook URL to each repo in GitHub Settings.</p>
+
+    <div class="g g4" style="margin-bottom:16px;">
+        <div class="card stat-sm"><div class="stat-val c-blue" id="ghRepoCount">0</div><div class="stat-label">Repositories</div></div>
+        <div class="card stat-sm"><div class="stat-val c-amber" id="ghStars">0</div><div class="stat-label">Total Stars</div></div>
+        <div class="card stat-sm"><div class="stat-val c-green" id="ghOpenPrs">0</div><div class="stat-label">Open PRs</div></div>
+        <div class="card stat-sm"><div class="stat-val c-purple" id="ghOpenIssues">0</div><div class="stat-label">Open Issues</div></div>
+    </div>
+
+    <!-- Repo cards -->
+    <div class="card-title" style="margin-bottom:12px;">Repositories</div>
+    <div class="g g2" id="ghRepoGrid" style="margin-bottom:20px;">
+        <div class="empty full"><div class="empty-icon">&#128025;</div>No repos configured. Go to Settings to connect your GitHub account</div>
+    </div>
+
+    <!-- Tabs for PRs / Issues / Commits / Contributors -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+        <button class="btn btn-sm gh-tab active" data-ghtab="pulls" onclick="switchGhTab('pulls')">Pull Requests</button>
+        <button class="btn btn-sm btn-ghost gh-tab" data-ghtab="issues" onclick="switchGhTab('issues')">Issues</button>
+        <button class="btn btn-sm btn-ghost gh-tab" data-ghtab="commits" onclick="switchGhTab('commits')">Commits</button>
+        <button class="btn btn-sm btn-ghost gh-tab" data-ghtab="contributors" onclick="switchGhTab('contributors')">Contributors</button>
+    </div>
+
+    <div id="ghTabPulls" class="gh-tab-content">
+        <div class="card full"><div class="card-title">Pull Requests</div><table class="tbl"><thead><tr><th>#</th><th>Title</th><th>Author</th><th>State</th><th>Updated</th></tr></thead><tbody id="tbGhPulls"></tbody></table></div>
+    </div>
+    <div id="ghTabIssues" class="gh-tab-content" style="display:none">
+        <div class="card full"><div class="card-title">Issues</div><table class="tbl"><thead><tr><th>#</th><th>Title</th><th>Author</th><th>State</th><th>Labels</th><th>Updated</th></tr></thead><tbody id="tbGhIssues"></tbody></table></div>
+    </div>
+    <div id="ghTabCommits" class="gh-tab-content" style="display:none">
+        <div class="card full"><div class="card-title">Recent Commits</div><table class="tbl"><thead><tr><th>SHA</th><th>Message</th><th>Author</th><th>Date</th></tr></thead><tbody id="tbGhCommits"></tbody></table></div>
+    </div>
+    <div id="ghTabContributors" class="gh-tab-content" style="display:none">
+        <div class="card full"><div class="card-title">Contributors</div><table class="tbl"><thead><tr><th>User</th><th>Contributions</th></tr></thead><tbody id="tbGhContributors"></tbody></table></div>
+    </div>
+</div>
+
+<!-- ═══ HEALTH ═══ -->
+<div class="panel" id="p-health">
+    <div class="card card-glow full" style="margin-bottom:16px;">
+        <div class="hero-score">
+            <div>
+                <div class="hero-num" id="h-overall">--</div>
+                <div id="h-grade" style="text-align:center;font-size:12px;color:var(--text3)">Loading</div>
+            </div>
+            <div style="flex:1">
+                <div class="hero-grade" id="h-delta"></div>
+                <div class="hero-narrative" id="h-narrative">Fetching health data from ENGRAM...</div>
+            </div>
+        </div>
+    </div>
+    <div class="g g6">
+        <div class="card gauge"><div class="card-title">Decisions</div><div class="gauge-val" id="vDecisions">--</div><div class="gauge-bar"><div class="gauge-fill" id="bDecisions"></div></div></div>
+        <div class="card gauge"><div class="card-title">Pulse</div><div class="gauge-val" id="vPulse">--</div><div class="gauge-bar"><div class="gauge-fill" id="bPulse"></div></div></div>
+        <div class="card gauge"><div class="card-title">Shield</div><div class="gauge-val" id="vShield">--</div><div class="gauge-bar"><div class="gauge-fill" id="bShield"></div></div></div>
+        <div class="card gauge"><div class="card-title">Atlas</div><div class="gauge-val" id="vAtlas">--</div><div class="gauge-bar"><div class="gauge-fill" id="bAtlas"></div></div></div>
+        <div class="card gauge"><div class="card-title">Vault</div><div class="gauge-val" id="vVault">--</div><div class="gauge-bar"><div class="gauge-fill" id="bVault"></div></div></div>
+        <div class="card gauge"><div class="card-title">Review</div><div class="gauge-val" id="vReview">--</div><div class="gauge-bar"><div class="gauge-fill" id="bReview"></div></div></div>
+    </div>
+    <div class="g g2" style="margin-top:16px;">
+        <div class="card"><div class="card-title">Health Trend</div><div class="chart-wrap" style="height:240px"><canvas id="chartTrend"></canvas></div></div>
+        <div class="card"><div class="card-title">Layer Radar</div><div class="chart-wrap" style="height:240px"><canvas id="chartRadar"></canvas></div></div>
+    </div>
+    <div class="g g4" style="margin-top:16px;">
+        <div class="card stat-sm"><div class="stat-val" id="dNewRfcs">0</div><div class="stat-label">New RFCs</div></div>
+        <div class="card stat-sm"><div class="stat-val" id="dRegressions">0</div><div class="stat-label">Regressions</div></div>
+        <div class="card stat-sm"><div class="stat-val" id="dVulns">0</div><div class="stat-label">New CVEs</div></div>
+        <div class="card stat-sm"><div class="stat-val" id="dPrs">0</div><div class="stat-label">PRs Reviewed</div></div>
+    </div>
+    <div class="card full" style="margin-top:16px;">
+        <div class="card-title">Actions Required</div>
+        <div class="action-list" id="actionList"><div class="empty"><div class="empty-icon">&#10003;</div>No critical actions pending</div></div>
+    </div>
+</div>
+
+<!-- ═══ TIMELINE ═══ -->
+<div class="panel" id="p-timeline">
+    <div class="g g3" style="margin-bottom:16px;">
+        <div class="card stat"><div class="stat-val" id="tTotal">0</div><div class="stat-label">Total Events</div></div>
+        <div class="card stat"><div class="stat-val c-amber" id="tMilestones">0</div><div class="stat-label">Milestones</div></div>
+        <div class="card stat"><div class="stat-val c-green" id="tLayers">0</div><div class="stat-label">Active Layers</div></div>
+    </div>
+    <div class="card full" style="margin-bottom:16px;"><div class="card-title">Events by Layer</div><div class="chart-wrap" style="height:220px"><canvas id="chartEventLayer"></canvas></div></div>
+    <div class="card full"><div class="card-title">Recent Events</div><table class="tbl"><thead><tr><th>Event</th><th>Layer</th><th>Type</th><th>Time</th><th>Milestone</th></tr></thead><tbody id="tbEvents"></tbody></table></div>
+</div>
+
+<!-- ═══ DECISIONS ═══ -->
+<div class="panel" id="p-decisions">
+    <div class="g g3" style="margin-bottom:16px;">
+        <div class="card stat"><div class="stat-val" id="rfcTotal">0</div><div class="stat-label">Total RFCs</div></div>
+        <div class="card stat"><div class="stat-val c-green" id="rfcApproved">0</div><div class="stat-label">Approved</div></div>
+        <div class="card stat"><div class="stat-val c-amber" id="rfcStale">0</div><div class="stat-label">Stale</div></div>
+    </div>
+    <div class="card full" style="margin-bottom:16px;"><div class="card-title">RFC Status</div><div class="chart-wrap" style="height:220px"><canvas id="chartRfcStatus"></canvas></div></div>
+    <div class="card full"><div class="card-title">RFCs</div><table class="tbl"><thead><tr><th>ID</th><th>Title</th><th>Status</th><th>Author</th></tr></thead><tbody id="tbRfcs"></tbody></table></div>
+</div>
+
+<!-- ═══ PULSE ═══ -->
+<div class="panel" id="p-pulse">
+    <div class="g g3" style="margin-bottom:16px;">
+        <div class="card stat"><div class="stat-val" id="bTotal">0</div><div class="stat-label">Benchmarks</div></div>
+        <div class="card stat"><div class="stat-val c-green" id="bNormal">0</div><div class="stat-label">Normal</div></div>
+        <div class="card stat"><div class="stat-val c-red" id="bRegressed">0</div><div class="stat-label">Regressed</div></div>
+    </div>
+    <div class="card full" style="margin-bottom:16px;"><div class="card-title">Benchmark Trend</div><div class="chart-wrap" style="height:240px"><canvas id="chartBench"></canvas></div></div>
+    <div class="card full"><div class="card-title">Regressions</div><table class="tbl"><thead><tr><th>Metric</th><th>Delta</th><th>Severity</th><th>Status</th><th>Commit</th></tr></thead><tbody id="tbRegressions"></tbody></table></div>
+</div>
+
+<!-- ═══ SHIELD ═══ -->
+<div class="panel" id="p-shield">
+    <div class="g g4" style="margin-bottom:16px;">
+        <div class="card stat"><div class="stat-val c-red" id="sCritical">0</div><div class="stat-label">Critical</div></div>
+        <div class="card stat"><div class="stat-val c-amber" id="sHigh">0</div><div class="stat-label">High</div></div>
+        <div class="card stat"><div class="stat-val c-blue" id="sMedium">0</div><div class="stat-label">Medium</div></div>
+        <div class="card stat"><div class="stat-val c-green" id="sLow">0</div><div class="stat-label">Low</div></div>
+    </div>
+    <div class="g g2" style="margin-bottom:16px;">
+        <div class="card"><div class="card-title">Severity</div><div class="chart-wrap" style="height:220px"><canvas id="chartVulnSev"></canvas></div></div>
+        <div class="card"><div class="card-title">Triage</div><div class="chart-wrap" style="height:220px"><canvas id="chartVulnTriage"></canvas></div></div>
+    </div>
+    <div class="card full"><div class="card-title">Vulnerabilities</div><table class="tbl"><thead><tr><th>Package</th><th>CVE</th><th>Severity</th><th>Triage</th><th>Version</th></tr></thead><tbody id="tbVulns"></tbody></table></div>
+</div>
+
+<!-- ═══ ATLAS ═══ -->
+<div class="panel" id="p-atlas">
+    <div class="g g3" style="margin-bottom:16px;">
+        <div class="card stat"><div class="stat-val" id="aDoc">0</div><div class="stat-label">Documented</div></div>
+        <div class="card stat"><div class="stat-val" id="aTotal">0</div><div class="stat-label">Total Modules</div></div>
+        <div class="card stat"><div class="stat-val c-amber" id="aGaps">0</div><div class="stat-label">Knowledge Gaps</div></div>
+    </div>
+    <div class="card full" style="margin-bottom:16px;"><div class="card-title">Module Coverage</div><div class="chart-wrap" style="height:220px"><canvas id="chartModules"></canvas></div></div>
+    <div class="card full"><div class="card-title">Modules</div><table class="tbl"><thead><tr><th>Module</th><th>Summary</th><th>Complexity</th><th>Status</th></tr></thead><tbody id="tbModules"></tbody></table></div>
+</div>
+
+<!-- ═══ VAULT ═══ -->
+<div class="panel" id="p-vault">
+    <div class="g g3" style="margin-bottom:16px;">
+        <div class="card stat"><div class="stat-val c-green" id="vActive">0</div><div class="stat-label">Active</div></div>
+        <div class="card stat"><div class="stat-val" id="vTotal">0</div><div class="stat-label">Total</div></div>
+        <div class="card stat"><div class="stat-val c-red" id="vMissing">0</div><div class="stat-label">Missing in Prod</div></div>
+    </div>
+    <div class="card full" style="margin-bottom:16px;"><div class="card-title">Env Config Status</div><div class="chart-wrap" style="height:220px"><canvas id="chartVault"></canvas></div></div>
+    <div class="card full"><div class="card-title">Environment Variables</div><table class="tbl"><thead><tr><th>Variable</th><th>Environment</th><th>Status</th><th>Rotation</th></tr></thead><tbody id="tbVault"></tbody></table></div>
+</div>
+
+<!-- ═══ REVIEW ═══ -->
+<div class="panel" id="p-review">
+    <div class="g g4" style="margin-bottom:16px;">
+        <div class="card stat"><div class="stat-val" id="rTotal">0</div><div class="stat-label">PRs Reviewed</div></div>
+        <div class="card stat"><div class="stat-val c-red" id="rBlockers">0</div><div class="stat-label">Blockers</div></div>
+        <div class="card stat"><div class="stat-val c-amber" id="rSuggestions">0</div><div class="stat-label">Suggestions</div></div>
+        <div class="card stat"><div class="stat-val c-blue" id="rPatterns">0</div><div class="stat-label">Patterns</div></div>
+    </div>
+    <div class="g g2" style="margin-bottom:16px;">
+        <div class="card"><div class="card-title">Issue Distribution</div><div class="chart-wrap" style="height:220px"><canvas id="chartRevDist"></canvas></div></div>
+        <div class="card"><div class="card-title">PR Status</div><div class="chart-wrap" style="height:220px"><canvas id="chartPrStatus"></canvas></div></div>
+    </div>
+    <div class="card full"><div class="card-title">PR Reviews</div><table class="tbl"><thead><tr><th>PR</th><th>Author</th><th>Status</th><th>Blockers</th><th>Suggestions</th></tr></thead><tbody id="tbReviews"></tbody></table></div>
+</div>
+
+<!-- ═══ RELEASES ═══ -->
+<div class="panel" id="p-releases">
+    <div class="card full"><div class="card-title">Releases</div><table class="tbl"><thead><tr><th>Version</th><th>Status</th><th>Milestone</th><th>Tests</th><th>Regression Free</th><th>CVE Free</th></tr></thead><tbody id="tbReleases"></tbody></table></div>
+</div>
+
+<!-- ═══ DOCS ═══ -->
+<div class="panel" id="p-docs">
+    <!-- Project Introduction (moved from old intro) -->
+    <div class="card card-glow full" style="margin-bottom:20px;">
+        <div class="card-title" style="margin-bottom:12px;">What ENGRAM Does</div>
+        <p style="color:var(--text2);line-height:1.8;font-size:13px;">
+            ENGRAM deploys <strong style="color:var(--accent)">9 autonomous AI agents</strong> that continuously monitor your engineering workflow.
+            GitHub PRs, CI benchmarks, security audits, and codebase changes are analyzed in real-time and written as structured intelligence
+            into <strong style="color:var(--accent)">22 Notion databases</strong>. A Health agent synthesizes everything into a single score,
+            while Claude AI generates narratives, risk assessments, and actionable recommendations.
+        </p>
+    </div>
+
+    <div class="g g2" style="margin-bottom:20px;">
+        <div class="card">
+            <div class="card-title">Architecture</div>
+            <pre style="font-size:11px;margin-top:12px;">
+ GitHub API (poll) ──&gt; engram-core daemon
+ CI Webhooks ────────&gt;   (axum on :3000)
+ Cron Schedule ──────&gt;       |
+                        EventRouter
+                    (tokio broadcast x9)
+                            |
+  +---------+---------+---------+---------+
+  | Dec     | Pulse   | Shield  | Atlas   |
+  | Vault   | Review  | Health  | Time    |
+  | Release |         |         |         |
+  +---------+---------+---------+---------+
+                            |
+                  Notion REST API
+                   (22 databases)</pre>
+        </div>
+        <div class="card">
+            <div class="card-title">Technology Stack</div>
+            <div style="margin-top:12px;">
+                <table class="tbl">
+                    <tr><td style="color:var(--accent)">Runtime</td><td>Rust + Tokio async</td></tr>
+                    <tr><td style="color:var(--accent)">Web</td><td>Axum web framework</td></tr>
+                    <tr><td style="color:var(--accent)">AI</td><td>Claude (Anthropic API)</td></tr>
+                    <tr><td style="color:var(--accent)">Data</td><td>Notion REST API (22 DBs)</td></tr>
+                    <tr><td style="color:var(--accent)">Scheduler</td><td>tokio-cron-scheduler</td></tr>
+                    <tr><td style="color:var(--accent)">Security</td><td>HMAC-SHA256 webhook verify</td></tr>
+                    <tr><td style="color:var(--accent)">Dashboard</td><td>Vanilla JS + Chart.js</td></tr>
+                    <tr><td style="color:var(--accent)">Source</td><td>GitHub API polling (no ngrok)</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Start -->
+    <div class="card full" style="margin-bottom:20px;">
+        <div class="card-title" style="margin-bottom:14px;">Quick Start</div>
+        <div class="step-grid">
+            <div class="step-card"><h5><span class="step-num">1</span>Configure</h5><p>Run ENGRAM and open the dashboard. The first-start wizard walks you through connecting Notion, GitHub, and Claude.</p></div>
+            <div class="step-card"><h5><span class="step-num">2</span>Initialize</h5><p>The setup wizard creates all 22 Notion databases with schemas, relations, and sample data automatically.</p></div>
+            <div class="step-card"><h5><span class="step-num">3</span>Webhooks</h5><p>Add the webhook URL to each repo's GitHub Settings &rarr; Webhooks, or use the <code>ci/engram-notify.yml</code> GitHub Action.</p></div>
+            <div class="step-card"><h5><span class="step-num">4</span>Monitor</h5><p>Data flows in via webhooks. Intelligence layers analyze and write to Notion. Dashboard updates automatically.</p></div>
+        </div>
+    </div>
+
+    <!-- Layer descriptions -->
+    <div class="card-title" style="margin-bottom:12px;">Intelligence Layer Reference</div>
+    <div class="layer-grid" style="margin-bottom:20px;">
+        <div class="layer-card"><div class="lc-icon">&#9878;</div><h4>Decisions</h4><p>Tracks RFCs from draft to implementation. Detects drift between approved architecture and actual code. AI-generated impact analysis and trade-off summaries.</p></div>
+        <div class="layer-card"><div class="lc-icon">&#9889;</div><h4>Pulse</h4><p>Ingests CI benchmark results from Criterion, Hyperfine, k6. Detects regressions using rolling statistical baselines with configurable thresholds.</p></div>
+        <div class="layer-card"><div class="lc-icon">&#9888;</div><h4>Shield</h4><p>Processes audit output from cargo-audit, npm-audit, pip-audit, OSV-Scanner. Auto-triages CVEs by CVSS. AI fix recommendations.</p></div>
+        <div class="layer-card"><div class="lc-icon">&#9776;</div><h4>Atlas</h4><p>Maps codebase modules with AI summaries, complexity scores, dependency graphs. Identifies knowledge gaps, generates onboarding tracks.</p></div>
+        <div class="layer-card"><div class="lc-icon">&#128274;</div><h4>Vault</h4><p>Inventories env vars, API keys, secrets. Tracks rotation schedules, detects missing credentials, alerts on policy violations.</p></div>
+        <div class="layer-card"><div class="lc-icon">&#128269;</div><h4>Review</h4><p>AI PR review with blocker/suggestion/nit classification. Detects recurring patterns, enforces playbook rules, generates tech debt items.</p></div>
+        <div class="layer-card"><div class="lc-icon">&#10084;</div><h4>Health</h4><p>Aggregates all layers into a weighted composite score (0-100). Generates weekly digests with AI narrative, risks, wins, actions.</p></div>
+        <div class="layer-card"><div class="lc-icon">&#128337;</div><h4>Timeline</h4><p>Records every engineering event into a unified, searchable timeline. Marks milestones, tracks project evolution.</p></div>
+        <div class="layer-card"><div class="lc-icon">&#128230;</div><h4>Release</h4><p>Aggregates PR, RFC, CVE, regression data for release readiness. AI release notes, migration guides, go/no-go recommendations.</p></div>
+    </div>
+
+    <!-- API Reference -->
+    <div class="card" style="max-width:900px;">
+        <div class="card-title">API Reference</div>
+        <table class="tbl" style="margin-top:14px;">
+            <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td>GET</td><td class="mono">/health</td><td>Service health check</td></tr>
+                <tr><td>GET</td><td class="mono">/api/projects</td><td>List all projects</td></tr>
+                <tr><td>GET</td><td class="mono">/api/config</td><td>Sanitized server config</td></tr>
+                <tr><td>GET</td><td class="mono">/api/github/connection</td><td>GitHub connection status</td></tr>
+                <tr><td>GET</td><td class="mono">/api/notion/connection</td><td>Notion connection status</td></tr>
+                <tr><td>GET</td><td class="mono">/api/github/repos</td><td>Fetch configured repo details</td></tr>
+                <tr><td>GET</td><td class="mono">/api/github/repo/:owner/:repo/pulls</td><td>PR list for a repo</td></tr>
+                <tr><td>GET</td><td class="mono">/api/github/repo/:owner/:repo/issues</td><td>Issues for a repo</td></tr>
+                <tr><td>GET</td><td class="mono">/api/github/repo/:owner/:repo/commits</td><td>Recent commits</td></tr>
+                <tr><td>GET</td><td class="mono">/api/github/repo/:owner/:repo/contributors</td><td>Contributors</td></tr>
+                <tr><td>GET</td><td class="mono">/api/dashboard/health</td><td>Health reports</td></tr>
+                <tr><td>GET</td><td class="mono">/api/dashboard/events</td><td>Timeline events</td></tr>
+                <tr><td>GET</td><td class="mono">/api/dashboard/rfcs</td><td>RFCs</td></tr>
+                <tr><td>GET</td><td class="mono">/api/dashboard/vulnerabilities</td><td>Dependencies / CVEs</td></tr>
+                <tr><td>GET</td><td class="mono">/api/dashboard/reviews</td><td>PR reviews</td></tr>
+                <tr><td>GET</td><td class="mono">/api/dashboard/modules</td><td>Codebase modules</td></tr>
+                <tr><td>GET</td><td class="mono">/api/dashboard/env-config</td><td>Environment config</td></tr>
+                <tr><td>GET</td><td class="mono">/api/dashboard/benchmarks</td><td>Benchmarks</td></tr>
+                <tr><td>GET</td><td class="mono">/api/dashboard/releases</td><td>Releases</td></tr>
+                <tr><td>POST</td><td class="mono">/webhook/github</td><td>GitHub PR webhook</td></tr>
+                <tr><td>POST</td><td class="mono">/webhook/benchmark</td><td>CI benchmark results</td></tr>
+                <tr><td>POST</td><td class="mono">/webhook/audit</td><td>Security audit results</td></tr>
+                <tr><td>POST</td><td class="mono">/api/trigger/digest</td><td>Trigger weekly digest</td></tr>
+                <tr><td>POST</td><td class="mono">/api/trigger/onboard</td><td>Onboard new engineer</td></tr>
+                <tr><td>POST</td><td class="mono">/api/trigger/release</td><td>Create release</td></tr>
+            </tbody>
+        </table>
+        <div style="margin-top:20px;">
+            <div class="card-title" style="margin-bottom:10px;">Query Parameters</div>
+            <p style="color:var(--text2);font-size:12px;line-height:1.7;">All <code>/api/dashboard/*</code> endpoints accept <code>?project_id=xxx</code> to filter by project/repo.</p>
+        </div>
+        <div style="margin-top:20px;">
+            <div class="card-title" style="margin-bottom:10px;">Health Score Formula</div>
+            <pre>Overall = 0.20 x Decisions + 0.20 x Pulse + 0.20 x Shield
+       + 0.10 x Atlas    + 0.15 x Vault + 0.15 x Review</pre>
+        </div>
+        <div style="margin-top:20px;">
+            <div class="card-title" style="margin-bottom:10px;">Notion Databases (22)</div>
+            <div style="columns:2;font-size:12px;color:var(--text2);line-height:1.8;">
+                <div>Projects</div><div>RFCs</div><div>RFC Comments</div><div>Benchmarks</div><div>Regressions</div><div>Performance Baselines</div><div>Dependencies</div><div>Audit Runs</div><div>Modules</div><div>Onboarding Tracks</div><div>Onboarding Steps</div><div>Knowledge Gaps</div><div>Env Config</div><div>Config Snapshots</div><div>Secret Rotation Log</div><div>PR Reviews</div><div>Review Playbook</div><div>Review Patterns</div><div>Tech Debt</div><div>Health Reports</div><div>Engineering Digest</div><div>Events</div><div>Releases</div>
+            </div>
+        </div>
+    </div>
+    <div class="footer">ENGRAM &mdash; Built for the DEV.to x Notion MCP Challenge 2026</div>
+</div>
+
+<!-- ═══ SETTINGS ═══ -->
+<div class="panel" id="p-settings">
+    <div class="g g2">
+        <!-- Connections / Tokens -->
+        <div class="card">
+            <div class="card-title" style="margin-bottom:12px;">Connections &amp; Tokens</div>
+            <p style="font-size:11px;color:var(--text3);margin-bottom:12px;">Enter your tokens below. They are saved to engram.toml on the server and take effect immediately &mdash; no restart needed.</p>
+            <div class="form-group">
+                <label>GitHub Personal Access Token</label>
+                <input id="cfgGithubToken" type="password" placeholder="github_pat_..." autocomplete="off">
+                <span style="font-size:10px;color:var(--text3)">Create at github.com/settings/tokens &mdash; needs repo, read:org scopes</span>
+            </div>
+            <div class="form-group">
+                <label>GitHub Repos (comma-separated, e.g. owner/repo)</label>
+                <input id="cfgGithubRepos" placeholder="myuser/my-project, myuser/other-repo">
+                <div id="webhookUrlGuide" style="display:none;margin-top:10px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;">
+                    <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--accent);font-weight:600;margin-bottom:6px;">Webhook Setup Required Per Repo</div>
+                    <p style="font-size:11px;color:var(--text2);margin-bottom:6px;">For each repo above, add a webhook in <strong>GitHub &rarr; Repo Settings &rarr; Webhooks</strong>:</p>
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                        <code id="webhookUrlValue" style="flex:1;font-size:11px;word-break:break-all;"></code>
+                        <button class="btn btn-sm btn-ghost" onclick="navigator.clipboard.writeText($('webhookUrlValue').textContent)" style="white-space:nowrap;">Copy</button>
+                    </div>
+                    <p style="font-size:10px;color:var(--text3);">Content type: <code>application/json</code> &mdash; Events: Pull requests, Pushes</p>
+                    <p style="font-size:10px;color:var(--accent);margin-top:4px;">For localhost: use <code>ci/engram-notify.yml</code> GitHub Action workflow instead (no tunnel needed).</p>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Notion Integration Token</label>
+                <input id="cfgNotionToken" type="password" placeholder="ntn_..." autocomplete="off">
+                <span style="font-size:10px;color:var(--text3)">Create at notion.so/profile/integrations</span>
+            </div>
+            <div class="form-group">
+                <label>Notion Workspace ID</label>
+                <input id="cfgWorkspaceId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+            </div>
+            <div class="form-group">
+                <label>Anthropic API Key</label>
+                <input id="cfgAnthropicKey" type="password" placeholder="sk-ant-..." autocomplete="off">
+                <span style="font-size:10px;color:var(--text3)">From console.anthropic.com/settings/keys</span>
+            </div>
+            <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px;">
+                <div class="card-title" style="margin-bottom:8px;">Webhook &amp; Server</div>
+                <div class="form-group">
+                    <label>Webhook Secret</label>
+                    <input id="cfgWebhookSecret" type="password" placeholder="your-webhook-secret" autocomplete="off">
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                    <div class="form-group">
+                        <label>Server Host / IP</label>
+                        <input id="cfgServerHost" placeholder="127.0.0.1">
+                        <span style="font-size:10px;color:var(--text3)">Default: 127.0.0.1 (local). Use 0.0.0.0 for all interfaces</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Server Port</label>
+                        <input id="cfgServerPort" type="number" placeholder="3000" min="1" max="65535">
+                    </div>
+                </div>
+                <p style="font-size:10px;color:var(--accent);margin-top:8px;">Host/port changes require a service restart to take effect.</p>
+            </div>
+            <div style="margin-top:16px;display:flex;gap:10px;align-items:center;">
+                <button class="btn" onclick="saveServerConfig()">Save Connections</button>
+                <span id="cfgSaveStatus" style="font-size:11px;color:var(--text3);"></span>
+            </div>
+        </div>
+        <!-- Connection Status -->
+        <div class="card">
+            <div class="card-title" style="margin-bottom:12px;">Connection Status</div>
+            <div id="settingsConnStatus">Checking connections...</div>
+            <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px;">
+                <div class="card-title" style="margin-bottom:8px;">Dashboard Settings</div>
+                <div class="form-group"><label>ENGRAM API URL</label><input id="cfgUrl" value="http://localhost:3000" placeholder="http://localhost:3000"></div>
+                <div class="form-group"><label>Auto-Refresh (seconds)</label><input type="number" id="cfgRefresh" value="30" min="5" max="300"></div>
+                <div style="margin-top:12px;display:flex;gap:10px;">
+                    <button class="btn btn-ghost" onclick="saveConfig()">Save Dashboard Prefs</button>
+                    <button class="btn btn-ghost" onclick="resetConfig()">Reset Defaults</button>
+                </div>
+                <p style="font-size:10px;color:var(--text3);margin-top:8px;">Dashboard prefs stored in localStorage.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Server config (read-only, from API) -->
+    <div class="card full" style="margin-top:16px;">
+        <div class="card-title" style="margin-bottom:12px;">Server Configuration (from engram.toml)</div>
+        <div id="serverConfig" style="color:var(--text2);font-size:12px;">Loading...</div>
+    </div>
+</div>
+
+</main>
+</div>
+
+<!-- JAVASCRIPT -->
+<script>
+(function(){
+'use strict';
+
+// ── Config ──
+const DEF = { apiUrl:'http://localhost:3000', refreshInterval:30, repos:'' };
+function cfg(){ try{ return {...DEF,...JSON.parse(localStorage.engram_cfg||'{}')}; }catch{return DEF;} }
+window.saveConfig = ()=>{ localStorage.engram_cfg=JSON.stringify({apiUrl:$('cfgUrl').value.replace(/\/+$/,''),refreshInterval:+$('cfgRefresh').value||30}); location.reload(); };
+window.resetConfig = ()=>{ localStorage.removeItem('engram_cfg'); location.reload(); };
+
+// Save tokens/repos to the backend (POST /api/config/update)
+window.saveServerConfig = async ()=>{
+    const status=$('cfgSaveStatus');
+    status.textContent='Saving...'; status.style.color='var(--text3)';
+    const body={};
+    const gt=$('cfgGithubToken').value.trim();
+    if(gt) body.github_token=gt;
+    const gr=$('cfgGithubRepos').value.trim();
+    if(gr) body.github_repos=gr.split(',').map(s=>s.trim()).filter(Boolean);
+    const nt=$('cfgNotionToken').value.trim();
+    if(nt) body.notion_token=nt;
+    const wid=$('cfgWorkspaceId').value.trim();
+    if(wid) body.workspace_id=wid;
+    const ak=$('cfgAnthropicKey').value.trim();
+    if(ak) body.anthropic_api_key=ak;
+    const ws=$('cfgWebhookSecret').value.trim();
+    if(ws) body.webhook_secret=ws;
+    const sh=$('cfgServerHost').value.trim();
+    if(sh) body.server_host=sh;
+    const sp=$('cfgServerPort').value.trim();
+    if(sp) body.server_port=parseInt(sp,10);
+    if(Object.keys(body).length===0){ status.textContent='Nothing to save — fill in at least one field.'; status.style.color='var(--yellow)'; return; }
+    try{
+        const c=cfg();
+        const r=await fetch(c.apiUrl+'/api/config/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+        const j=await r.json();
+        if(r.ok){ status.textContent='Saved! Changes are live.'; status.style.color='var(--green)'; setTimeout(()=>{fetchSettings();fetchConnections();checkSetupStatus();},500); }
+        else{ status.textContent='Error: '+(j.error||'Unknown'); status.style.color='var(--red)'; }
+    }catch(e){ status.textContent='Failed: '+e.message; status.style.color='var(--red)'; }
+};
+function $(id){ return document.getElementById(id); }
+
+// ── First-Start Setup ──
+async function checkFirstStart(){
+    try{
+        const c=cfg();
+        const r=await fetch(c.apiUrl+'/api/setup/status',{signal:AbortSignal.timeout(3000)});
+        if(!r.ok) return;
+        const s=await r.json();
+        // Show first-start overlay if nothing is configured
+        if(!s.notion_ready && !s.github_ready && !s.ai_ready && !s.initialized){
+            $('firstStartOverlay').style.display='flex';
+        }
+    }catch{
+        // Server not reachable yet — don't show overlay
+    }
+}
+
+window.submitFirstStart = async function(){
+    const status=$('fsStatus');
+    status.textContent='Saving configuration...'; status.style.color='var(--accent)';
+    const body={};
+    const nt=$('fsNotionToken').value.trim();
+    if(nt) body.notion_token=nt;
+    const wid=$('fsWorkspaceId').value.trim();
+    if(wid) body.workspace_id=wid;
+    const gt=$('fsGithubToken').value.trim();
+    if(gt) body.github_token=gt;
+    const gr=$('fsGithubRepos').value.trim();
+    if(gr) body.github_repos=gr.split(',').map(s=>s.trim()).filter(Boolean);
+    const ak=$('fsAnthropicKey').value.trim();
+    if(ak) body.anthropic_api_key=ak;
+    const sh=$('fsServerHost').value.trim();
+    if(sh) body.server_host=sh;
+    const sp=$('fsServerPort').value.trim();
+    if(sp) body.server_port=parseInt(sp,10);
+    const ws=$('fsWebhookSecret').value.trim();
+    if(ws) body.webhook_secret=ws;
+
+    if(!nt || !wid){
+        status.textContent='Notion token and Workspace ID are required to continue.';
+        status.style.color='var(--red)';
+        return;
+    }
+
+    try{
+        const c=cfg();
+        const r=await fetch(c.apiUrl+'/api/config/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+        const j=await r.json();
+        if(!r.ok){ status.textContent='Error: '+(j.error||'Unknown'); status.style.color='var(--red)'; return; }
+
+        status.textContent='Tokens saved! Initializing Notion databases (this takes ~30s)...';
+        status.style.color='var(--accent)';
+
+        // Auto-trigger Notion setup
+        const sr=await fetch(c.apiUrl+'/api/setup/notion',{method:'POST',signal:AbortSignal.timeout(120000)});
+        const sj=await sr.json();
+        if(sr.ok){
+            status.textContent='Setup complete! Launching dashboard...';
+            status.style.color='var(--green)';
+            setTimeout(()=>{
+                $('firstStartOverlay').style.display='none';
+                fetchAll();
+            },1500);
+        } else {
+            status.textContent='Tokens saved but DB init failed: '+(sj.error||'Unknown')+'. You can retry from the Setup Wizard on the Home tab.';
+            status.style.color='var(--accent)';
+            setTimeout(()=>{ $('firstStartOverlay').style.display='none'; fetchAll(); },3000);
+        }
+    }catch(e){
+        status.textContent='Error: '+e.message;
+        status.style.color='var(--red)';
+    }
+};
+
+window.skipFirstStart = function(){
+    $('firstStartOverlay').style.display='none';
+};
+
+// ── Navigation ──
+window.navTo = function(tab){
+    document.querySelectorAll('.sidebar-item').forEach(i=>{ i.classList.toggle('active',i.dataset.tab===tab); });
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    $('p-'+tab).classList.add('active');
+    // Load GitHub data when navigating to GitHub tab
+    if(tab==='github') fetchGitHub();
+};
+document.getElementById('sidebar').addEventListener('click',e=>{
+    const it=e.target.closest('.sidebar-item'); if(!it) return;
+    navTo(it.dataset.tab);
+});
+
+// ── GitHub tab switcher ──
+window.switchGhTab = function(tab){
+    document.querySelectorAll('.gh-tab').forEach(b=>{ b.classList.toggle('active',b.dataset.ghtab===tab); if(b.dataset.ghtab!==tab){b.classList.add('btn-ghost');}else{b.classList.remove('btn-ghost');} });
+    document.querySelectorAll('.gh-tab-content').forEach(c=>c.style.display='none');
+    $('ghTab'+tab.charAt(0).toUpperCase()+tab.slice(1)).style.display='block';
+};
+
+// ── Chart defaults ──
+Chart.defaults.color='#555';
+Chart.defaults.borderColor='#1e1e1e';
+Chart.defaults.font.family="'Inter',system-ui,sans-serif";
+Chart.defaults.font.size=11;
+let charts={};
+function chart(id,c){ if(charts[id]) charts[id].destroy(); const el=$(id); if(!el) return; charts[id]=new Chart(el,c); }
+
+// ── Helpers ──
+function sc(v){ return v>=80?'green':v>=50?'amber':'red'; }
+function tag(t,c){ return `<span class="tag tag-${c}">${t}</span>`; }
+function np(page,prop){ const p=page.properties?.[prop]; if(!p) return ''; if(p.title) return p.title.map(t=>t.plain_text).join(''); if(p.rich_text) return p.rich_text.map(t=>t.plain_text).join(''); if(p.number!=null) return p.number; if(p.select) return p.select?.name||''; if(p.checkbox!=null) return p.checkbox; if(p.date) return p.date?.start||''; return ''; }
+function pages(r){ return r?.results||[]; }
+function timeAgo(d){ if(!d) return ''; const s=Math.floor((Date.now()-new Date(d))/1000); if(s<60) return s+'s ago'; if(s<3600) return Math.floor(s/60)+'m ago'; if(s<86400) return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago'; }
+function langColor(l){ const m={JavaScript:'#f1e05a',TypeScript:'#3178c6',Python:'#3572a5',Rust:'#dea584',Go:'#00add8',Java:'#b07219',Ruby:'#701516',C:'#555','C++':'#f34b7d','C#':'#178600',Shell:'#89e051',HTML:'#e34c26',CSS:'#563d7c'}; return m[l]||'#555'; }
+
+// ── Repo management ──
+let currentRepo = null;
+window.switchRepo = function(v){ currentRepo=v||null; fetchAll(); };
+
+function loadRepoSelector(){
+    const sel=$('repoSelect');
+    const c=cfg();
+    if(c.repos){
+        c.repos.split(',').map(r=>r.trim()).filter(Boolean).forEach(r=>{
+            const o=document.createElement('option'); o.value=r; o.textContent=r; sel.appendChild(o);
+        });
+    }
+    api('/api/projects').then(d=>{
+        pages(d).forEach(p=>{
+            const name=np(p,'Name');
+            if(name && !Array.from(sel.options).some(o=>o.value===name)){
+                const o=document.createElement('option'); o.value=name; o.textContent=name; sel.appendChild(o);
+            }
+        });
+    }).catch(()=>{});
+}
+
+// ── API ──
+async function api(path){
+    const c=cfg();
+    const url=new URL(path, c.apiUrl);
+    if(currentRepo) url.searchParams.set('project_id',currentRepo);
+    const r=await fetch(url, {signal:AbortSignal.timeout(8000)});
+    if(!r.ok) throw new Error(r.statusText);
+    return r.json();
+}
+
+// ── Gauge ──
+function setG(name,val){
+    const c=sc(val);
+    $('v'+name).textContent=Math.round(val); $('v'+name).className='gauge-val c-'+c;
+    $('b'+name).style.width=val+'%'; $('b'+name).className='gauge-fill bg-'+c;
+}
+
+// ═══════════════════════════════════════════════
+// HOME — Connections
+// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════
+// NOTION SEARCH
+// ═══════════════════════════════════════════════
+window.doNotionSearch = async function(){
+    const q=$('notionSearch').value.trim();
+    if(!q) return;
+    try{
+        const d=await api('/api/notion/search?q='+encodeURIComponent(q));
+        const results=(d.results||[]).slice(0,20);
+        if(results.length){
+            $('searchResults').style.display='block';
+            $('tbSearch').innerHTML=results.map(r=>{
+                const title=(r.properties?.Name?.title||r.properties?.['RFC ID']?.title||r.properties?.['Benchmark ID']?.title||[]).map(t=>t.plain_text).join('')||'Untitled';
+                const dbName=r.parent?.database_id?'DB: '+r.parent.database_id.slice(0,8)+'...':'Page';
+                const edited=timeAgo(r.last_edited_time);
+                const url=r.url||'#';
+                return `<tr><td><a href="${url}" target="_blank">${title}</a></td><td class="mono" style="font-size:10px">${dbName}</td><td>${edited}</td></tr>`;
+            }).join('');
+        } else {
+            $('searchResults').style.display='block';
+            $('tbSearch').innerHTML='<tr><td colspan="3" class="empty">No results for "'+q+'"</td></tr>';
+        }
+        // Scroll to results
+        $('searchResults').scrollIntoView({behavior:'smooth'});
+    }catch(e){ console.warn('Search:',e); }
+};
+
+// ═══════════════════════════════════════════════
+// HOME — Quick Notion stats
+// ═══════════════════════════════════════════════
+async function fetchHomeNotionStats(){
+    try{
+        const [rfcs,vulns,reviews]=await Promise.all([
+            api('/api/dashboard/rfcs').catch(()=>({results:[]})),
+            api('/api/dashboard/vulnerabilities').catch(()=>({results:[]})),
+            api('/api/dashboard/reviews').catch(()=>({results:[]})),
+        ]);
+        const rps=pages(rfcs); const vps=pages(vulns); const pps=pages(reviews);
+        $('homeRfcs').textContent=rps.length;
+        $('homeRfcsApproved').textContent=rps.filter(p=>np(p,'Status')==='Approved').length;
+        let crit=0,high=0,block=0;
+        vps.forEach(p=>{const s=np(p,'Severity'); if(s==='Critical')crit++; if(s==='High')high++;});
+        $('homeVulnsCrit').textContent=crit; $('homeVulnsHigh').textContent=high;
+        $('homePrs').textContent=pps.length;
+        pps.forEach(p=>{block+=np(p,'Blockers')||0;});
+        $('homePrBlockers').textContent=block;
+    }catch(e){ console.warn('Home stats:',e); }
+}
+
+async function fetchConnections(){
+    // GitHub — verify by actually calling the GitHub API through our proxy
+    try{
+        const gh=await api('/api/github/connection');
+        if(gh.connected && gh.repos?.length){
+            // Actually verify the connection works by fetching repos
+            try{
+                const repos=await api('/api/github/repos');
+                if(Array.isArray(repos) && repos.length>0){
+                    $('connGitHubStatus').innerHTML='<span class="dot" style="background:var(--green)"></span> <span style="color:var(--green)">Connected</span>';
+                    $('connGitHubDesc').textContent=repos.length+' repo(s): '+repos.map(r=>r.name).join(', ');
+                    $('homeRepos').textContent=repos.length;
+                    // Set Open button to first repo
+                    $('connGitHubOpen').href=repos[0].html_url;
+                    $('connGitHubOpen').style.display='inline-block';
+                } else {
+                    $('connGitHubStatus').innerHTML='<span class="dot" style="background:var(--accent)"></span> <span style="color:var(--accent)">Token OK, no repos found</span>';
+                    $('connGitHubDesc').textContent='Token configured but repos returned empty';
+                }
+            }catch{
+                $('connGitHubStatus').innerHTML='<span class="dot" style="background:var(--red)"></span> <span style="color:var(--red)">API Error</span>';
+                $('connGitHubDesc').textContent='Token configured but GitHub API returned an error';
+            }
+        } else if(gh.connected){
+            $('connGitHubStatus').innerHTML='<span class="dot" style="background:var(--accent)"></span> <span style="color:var(--accent)">No repos</span>';
+            $('connGitHubDesc').textContent='Token configured but no repos set — add repos in Settings';
+        } else {
+            $('connGitHubStatus').innerHTML='<span class="dot" style="background:var(--red)"></span> <span style="color:var(--red)">Not configured</span>';
+            $('connGitHubDesc').textContent='Go to Settings to connect your GitHub account';
+        }
+    }catch{
+        $('connGitHubStatus').innerHTML='<span class="dot" style="background:var(--red)"></span> <span style="color:var(--red)">Unreachable</span>';
+        $('connGitHubDesc').textContent='Cannot reach ENGRAM API';
+    }
+
+    // Notion — verify by actually querying the Projects database
+    try{
+        const nt=await api('/api/notion/connection');
+        if(nt.connected){
+            try{
+                const projects=await api('/api/projects');
+                const count=pages(projects).length;
+                $('connNotionStatus').innerHTML='<span class="dot" style="background:var(--green)"></span> <span style="color:var(--green)">Connected</span>';
+                $('connNotionDesc').textContent=count+' project(s) in workspace';
+                $('connNotionOpen').href='https://www.notion.so/'+nt.workspace_id.replace(/-/g,'');
+                $('connNotionOpen').style.display='inline-block';
+            }catch{
+                $('connNotionStatus').innerHTML='<span class="dot" style="background:var(--accent)"></span> <span style="color:var(--accent)">Token OK</span>';
+                $('connNotionDesc').textContent='Token configured but database query failed — run Notion setup from the Home tab';
+            }
+        } else {
+            $('connNotionStatus').innerHTML='<span class="dot" style="background:var(--red)"></span> <span style="color:var(--red)">Not configured</span>';
+            $('connNotionDesc').textContent='Go to Settings to connect your Notion workspace';
+        }
+    }catch{
+        $('connNotionStatus').innerHTML='<span class="dot" style="background:var(--red)"></span> <span style="color:var(--red)">Unreachable</span>';
+        $('connNotionDesc').textContent='Cannot reach ENGRAM API';
+    }
+
+    // Claude — verify model is configured
+    try{
+        const cf=await api('/api/config');
+        if(cf.claude?.model){
+            $('connClaudeStatus').innerHTML='<span class="dot" style="background:var(--green)"></span> <span style="color:var(--green)">Configured</span>';
+            $('connClaudeDesc').textContent='Model: '+cf.claude.model;
+            $('connClaudeOpen').style.display='inline-block';
+        } else {
+            $('connClaudeStatus').innerHTML='<span class="dot" style="background:var(--red)"></span> <span style="color:var(--red)">Not configured</span>';
+            $('connClaudeDesc').textContent='Go to Settings to add your Anthropic API key';
+        }
+    }catch{
+        $('connClaudeStatus').innerHTML='<span class="dot" style="background:var(--red)"></span> <span style="color:var(--red)">Unreachable</span>';
+        $('connClaudeDesc').textContent='Cannot reach ENGRAM API';
+    }
+}
+
+// ═══════════════════════════════════════════════
+// GITHUB — Full repo data
+// ═══════════════════════════════════════════════
+let ghRepos = [];
+async function fetchGitHub(){
+    try{
+        const repos = await api('/api/github/repos');
+        ghRepos = Array.isArray(repos) ? repos : [];
+        $('ghRepoCount').textContent = ghRepos.length;
+
+        let totalStars=0, totalOpenPrs=0, totalOpenIssues=0;
+        ghRepos.forEach(r=>{ totalStars+=r.stargazers_count||0; totalOpenIssues+=r.open_issues_count||0; });
+        $('ghStars').textContent = totalStars;
+        $('ghOpenIssues').textContent = totalOpenIssues;
+
+        // Repo cards
+        if(ghRepos.length){
+            $('ghRepoGrid').innerHTML = ghRepos.map(r=>`
+                <div class="repo-card" onclick="loadRepoDetail('${r.full_name}')">
+                    <h4>${r.name}</h4>
+                    <div class="repo-desc">${r.description||'No description'}</div>
+                    <div class="repo-stats">
+                        ${r.language?`<span><span class="repo-lang" style="background:${langColor(r.language)}"></span>${r.language}</span>`:''}
+                        <span>&#9733; ${r.stargazers_count||0}</span>
+                        <span>&#127860; ${r.forks_count||0}</span>
+                        <span>&#128065; ${r.watchers_count||0}</span>
+                        <span>&#128196; ${r.open_issues_count||0} issues</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Load PRs for first repo by default
+        if(ghRepos.length){
+            await loadRepoPulls(ghRepos[0].full_name);
+            await loadRepoIssues(ghRepos[0].full_name);
+            await loadRepoCommits(ghRepos[0].full_name);
+            await loadRepoContributors(ghRepos[0].full_name);
+        }
+    }catch(e){ console.warn('GitHub fetch:',e); }
+}
+
+window.loadRepoDetail = async function(fullName){
+    await Promise.all([
+        loadRepoPulls(fullName),
+        loadRepoIssues(fullName),
+        loadRepoCommits(fullName),
+        loadRepoContributors(fullName)
+    ]);
+};
+
+async function loadRepoPulls(fullName){
+    try{
+        const [owner,repo] = fullName.split('/');
+        const pulls = await api(`/api/github/repo/${owner}/${repo}/pulls`);
+        const open = (pulls||[]).filter(p=>p.state==='open').length;
+        $('ghOpenPrs').textContent = open;
+        $('tbGhPulls').innerHTML = (pulls||[]).slice(0,30).map(p=>{
+            const cls=p.state==='open'?'open':p.merged_at?'merged':'closed';
+            return `<tr><td class="mono">#${p.number}</td><td>${p.title}</td><td>${p.user?.login||''}</td><td>${tag(p.state,cls)}</td><td>${timeAgo(p.updated_at)}</td></tr>`;
+        }).join('')||'<tr><td colspan="5" class="empty">No pull requests</td></tr>';
+    }catch(e){ console.warn('PRs:',e); }
+}
+
+async function loadRepoIssues(fullName){
+    try{
+        const [owner,repo] = fullName.split('/');
+        const issues = await api(`/api/github/repo/${owner}/${repo}/issues`);
+        // Filter out PRs (GitHub API returns PRs as issues too)
+        const real = (issues||[]).filter(i=>!i.pull_request);
+        $('tbGhIssues').innerHTML = real.slice(0,30).map(i=>{
+            const cls=i.state==='open'?'open':'closed';
+            const labels=(i.labels||[]).map(l=>`<span class="tag" style="background:${l.color?'#'+l.color+'33':'var(--surface2)'};color:${l.color?'#'+l.color:'var(--text2)'}">${l.name}</span>`).join(' ');
+            return `<tr><td class="mono">#${i.number}</td><td>${i.title}</td><td>${i.user?.login||''}</td><td>${tag(i.state,cls)}</td><td>${labels||'-'}</td><td>${timeAgo(i.updated_at)}</td></tr>`;
+        }).join('')||'<tr><td colspan="6" class="empty">No issues</td></tr>';
+    }catch(e){ console.warn('Issues:',e); }
+}
+
+async function loadRepoCommits(fullName){
+    try{
+        const [owner,repo] = fullName.split('/');
+        const commits = await api(`/api/github/repo/${owner}/${repo}/commits`);
+        $('tbGhCommits').innerHTML = (commits||[]).slice(0,30).map(c=>{
+            const sha=(c.sha||'').slice(0,7);
+            const msg=c.commit?.message?.split('\n')[0]||'';
+            const author=c.commit?.author?.name||c.author?.login||'';
+            const date=c.commit?.author?.date||'';
+            return `<tr><td class="mono">${sha}</td><td style="max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${msg}</td><td>${author}</td><td>${timeAgo(date)}</td></tr>`;
+        }).join('')||'<tr><td colspan="4" class="empty">No commits</td></tr>';
+    }catch(e){ console.warn('Commits:',e); }
+}
+
+async function loadRepoContributors(fullName){
+    try{
+        const [owner,repo] = fullName.split('/');
+        const contribs = await api(`/api/github/repo/${owner}/${repo}/contributors`);
+        $('tbGhContributors').innerHTML = (contribs||[]).slice(0,30).map(c=>{
+            return `<tr><td><img src="${c.avatar_url}" width="20" height="20" style="border-radius:50%;vertical-align:middle;margin-right:8px">${c.login}</td><td>${c.contributions}</td></tr>`;
+        }).join('')||'<tr><td colspan="2" class="empty">No contributors</td></tr>';
+    }catch(e){ console.warn('Contributors:',e); }
+}
+
+// ═══════════════════════════════════════════════
+// HEALTH
+// ═══════════════════════════════════════════════
+async function fetchHealth(){
+    try{
+        const d=await api('/api/dashboard/health');
+        const ps=pages(d);
+        if(!ps.length){
+            [85,72,91,68,78,88].forEach((v,i)=>setG(['Decisions','Pulse','Shield','Atlas','Vault','Review'][i],v));
+            $('h-overall').textContent='81'; $('h-overall').className='hero-num c-green';
+            $('h-grade').textContent='B+'; $('homeScore').textContent='81'; $('homeScore').className='stat-val c-green';
+            $('h-narrative').innerHTML='<em>No health reports yet. Trigger a digest to generate.</em>';
+            return;
+        }
+        const latest=ps[0];
+        const overall=np(latest,'Overall Score')||0;
+        const scores={decisions:np(latest,'Decisions Score')||0,pulse:np(latest,'Pulse Score')||0,shield:np(latest,'Shield Score')||0,atlas:np(latest,'Atlas Score')||0,vault:np(latest,'Vault Score')||0,review:np(latest,'Review Score')||0};
+        $('h-overall').textContent=Math.round(overall); $('h-overall').className='hero-num c-'+sc(overall);
+        $('h-grade').textContent=overall>=90?'A':overall>=80?'B+':overall>=70?'B':overall>=60?'C':'D';
+        $('homeScore').textContent=Math.round(overall); $('homeScore').className='stat-val c-'+sc(overall);
+        $('h-narrative').innerHTML=np(latest,'AI Narrative')||'No narrative available.';
+        const delta=np(latest,'Delta From Last')||0;
+        $('h-delta').innerHTML=(delta>=0?'+':'')+delta.toFixed(1)+' from last <span class="delta '+(delta>=0?'delta-up':'delta-down')+'">'+(delta>=0?'\u25B2':'\u25BC')+'</span>';
+        setG('Decisions',scores.decisions); setG('Pulse',scores.pulse); setG('Shield',scores.shield);
+        setG('Atlas',scores.atlas); setG('Vault',scores.vault); setG('Review',scores.review);
+        chart('chartRadar',{type:'radar',data:{labels:['Decisions','Pulse','Shield','Atlas','Vault','Review'],datasets:[{data:[scores.decisions,scores.pulse,scores.shield,scores.atlas,scores.vault,scores.review],borderColor:'#f59e0b',backgroundColor:'#f59e0b18',pointBackgroundColor:'#f59e0b',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,scales:{r:{min:0,max:100,ticks:{stepSize:25,display:false},grid:{color:'#1e1e1e'},angleLines:{color:'#1e1e1e'}}},plugins:{legend:{display:false}}}});
+        const labels=ps.slice(0,8).reverse().map(p=>np(p,'Period')||'?');
+        const vals=ps.slice(0,8).reverse().map(p=>np(p,'Overall Score')||0);
+        chart('chartTrend',{type:'line',data:{labels,datasets:[{label:'Overall',data:vals,borderColor:'#f59e0b',borderWidth:2,fill:false,tension:0.3}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{min:0,max:100}},plugins:{legend:{labels:{boxWidth:12}}}}});
+    }catch(e){ console.warn('Health fetch:',e); }
+}
+
+// ═══════════════════════════════════════════════
+// TIMELINE, DECISIONS, etc. (unchanged logic)
+// ═══════════════════════════════════════════════
+async function fetchEvents(){
+    try{
+        const d=await api('/api/dashboard/events');
+        const ps=pages(d);
+        $('tTotal').textContent=ps.length;
+        $('tMilestones').textContent=ps.filter(p=>np(p,'Is Milestone')===true).length;
+        const layers=new Set(ps.map(p=>np(p,'Source Layer')));
+        $('tLayers').textContent=layers.size;
+        const lc={}; ps.forEach(p=>{const l=np(p,'Source Layer')||'Unknown'; lc[l]=(lc[l]||0)+1;});
+        chart('chartEventLayer',{type:'bar',data:{labels:Object.keys(lc),datasets:[{data:Object.values(lc),backgroundColor:['#22c55e88','#3b82f688','#ef444488','#f59e0b88','#8b5cf688','#ec489988','#06b6d488']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});
+        $('tbEvents').innerHTML=ps.slice(0,30).map(p=>{
+            const title=np(p,'Event Title'); const layer=np(p,'Source Layer'); const type=np(p,'Event Type');
+            const ts=np(p,'Timestamp')||p.created_time||''; const ms=np(p,'Is Milestone');
+            return `<tr><td>${title}</td><td>${tag(layer,'ok')}</td><td>${type}</td><td class="mono">${ts.slice(0,16)}</td><td>${ms?tag('YES','high'):'-'}</td></tr>`;
+        }).join('');
+    }catch(e){ console.warn('Events:',e); }
+}
+
+async function fetchRfcs(){
+    try{
+        const d=await api('/api/dashboard/rfcs');
+        const ps=pages(d);
+        $('rfcTotal').textContent=ps.length;
+        $('rfcApproved').textContent=ps.filter(p=>np(p,'Status')==='Approved').length;
+        $('rfcStale').textContent=ps.filter(p=>['Draft','Under Review'].includes(np(p,'Status'))).length;
+        const st={}; ps.forEach(p=>{const s=np(p,'Status')||'Unknown'; st[s]=(st[s]||0)+1;});
+        chart('chartRfcStatus',{type:'doughnut',data:{labels:Object.keys(st),datasets:[{data:Object.values(st),backgroundColor:['#22c55e','#3b82f6','#f59e0b','#8b5cf6','#ef4444','#06b6d4'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right'}}}});
+        $('tbRfcs').innerHTML=ps.map(p=>{
+            const id=np(p,'RFC ID'); const title=np(p,'RFC Title'); const status=np(p,'Status'); const author=np(p,'Author');
+            const cls=status==='Approved'?'ok':status==='Draft'?'draft':'open';
+            return `<tr><td class="mono">${id}</td><td>${title}</td><td>${tag(status,cls)}</td><td>${author}</td></tr>`;
+        }).join('');
+    }catch(e){ console.warn('RFCs:',e); }
+}
+
+async function fetchVulns(){
+    try{
+        const d=await api('/api/dashboard/vulnerabilities');
+        const ps=pages(d);
+        const bySev={Critical:0,High:0,Medium:0,Low:0};
+        const byTriage={};
+        ps.forEach(p=>{
+            const sev=np(p,'Severity')||'Unknown'; bySev[sev]=(bySev[sev]||0)+1;
+            const tri=np(p,'Triage Status')||'New'; byTriage[tri]=(byTriage[tri]||0)+1;
+        });
+        $('sCritical').textContent=bySev.Critical||0; $('sHigh').textContent=bySev.High||0;
+        $('sMedium').textContent=bySev.Medium||0; $('sLow').textContent=bySev.Low||0;
+        chart('chartVulnSev',{type:'doughnut',data:{labels:Object.keys(bySev),datasets:[{data:Object.values(bySev),backgroundColor:['#ef4444','#f59e0b','#3b82f6','#22c55e'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right'}}}});
+        chart('chartVulnTriage',{type:'doughnut',data:{labels:Object.keys(byTriage),datasets:[{data:Object.values(byTriage),backgroundColor:['#ef4444','#f59e0b','#22c55e','#8b5cf6','#06b6d4'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right'}}}});
+        $('tbVulns').innerHTML=ps.slice(0,30).map(p=>{
+            const pkg=np(p,'Package'); const cve=np(p,'CVE ID'); const sev=np(p,'Severity'); const tri=np(p,'Triage Status'); const ver=np(p,'Version');
+            const cls=sev==='Critical'?'critical':sev==='High'?'high':sev==='Medium'?'medium':'low';
+            return `<tr><td>${pkg}</td><td class="mono">${cve}</td><td>${tag(sev,cls)}</td><td>${tri}</td><td>${ver}</td></tr>`;
+        }).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--text3)">No vulnerabilities found</td></tr>';
+    }catch(e){ console.warn('Vulns:',e); }
+}
+
+async function fetchReviews(){
+    try{
+        const d=await api('/api/dashboard/reviews');
+        const ps=pages(d);
+        $('rTotal').textContent=ps.length;
+        let blockers=0,suggestions=0;
+        ps.forEach(p=>{ blockers+=np(p,'Blockers')||0; suggestions+=np(p,'Suggestions')||0; });
+        $('rBlockers').textContent=blockers; $('rSuggestions').textContent=suggestions;
+        const st={}; ps.forEach(p=>{const s=np(p,'Status')||'Unknown'; st[s]=(st[s]||0)+1;});
+        chart('chartPrStatus',{type:'doughnut',data:{labels:Object.keys(st),datasets:[{data:Object.values(st),backgroundColor:['#3b82f6','#8b5cf6','#22c55e','#ef4444'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right'}}}});
+        chart('chartRevDist',{type:'doughnut',data:{labels:['Blockers','Suggestions'],datasets:[{data:[blockers,suggestions],backgroundColor:['#ef4444','#f59e0b'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right'}}}});
+        $('tbReviews').innerHTML=ps.slice(0,30).map(p=>{
+            const title=np(p,'PR Title'); const author=np(p,'Author'); const status=np(p,'Status');
+            const b=np(p,'Blockers')||0; const s=np(p,'Suggestions')||0;
+            const cls=status==='Merged'?'merged':status==='Open'?'open':'closed';
+            return `<tr><td>${title}</td><td>${author}</td><td>${tag(status,cls)}</td><td style="color:${b>0?'var(--red)':'var(--text3)'}">${b}</td><td>${s}</td></tr>`;
+        }).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--text3)">No reviews yet</td></tr>';
+    }catch(e){ console.warn('Reviews:',e); }
+}
+
+async function fetchModules(){
+    try{
+        const d=await api('/api/dashboard/modules');
+        const ps=pages(d);
+        const documented=ps.filter(p=>np(p,'Status')).length;
+        $('aDoc').textContent=documented; $('aTotal').textContent=ps.length; $('aGaps').textContent=Math.max(0,ps.length-documented);
+        chart('chartModules',{type:'bar',data:{labels:['Documented','Undocumented'],datasets:[{data:[documented,ps.length-documented],backgroundColor:['#22c55e88','#ef444488']}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}}}});
+        $('tbModules').innerHTML=ps.map(p=>{
+            const name=np(p,'Module Name'); const summary=np(p,'Summary'); const complexity=np(p,'Complexity Score'); const status=np(p,'Status');
+            return `<tr><td>${name}</td><td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${summary}</td><td>${complexity||'-'}</td><td>${status?tag(status,'ok'):tag('Undocumented','draft')}</td></tr>`;
+        }).join('')||'<tr><td colspan="4" style="text-align:center;color:var(--text3)">No modules mapped yet</td></tr>';
+    }catch(e){ console.warn('Modules:',e); }
+}
+
+async function fetchVault(){
+    try{
+        const d=await api('/api/dashboard/env-config');
+        const ps=pages(d);
+        const active=ps.filter(p=>np(p,'Status')==='Active').length;
+        const missing=ps.filter(p=>np(p,'Status')==='Missing In Prod').length;
+        $('vActive').textContent=active; $('vTotal').textContent=ps.length; $('vMissing').textContent=missing;
+        const st={}; ps.forEach(p=>{const s=np(p,'Status')||'Unknown'; st[s]=(st[s]||0)+1;});
+        chart('chartVault',{type:'doughnut',data:{labels:Object.keys(st),datasets:[{data:Object.values(st),backgroundColor:['#22c55e','#ef4444','#555','#f59e0b','#3b82f6'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right'}}}});
+        $('tbVault').innerHTML=ps.map(p=>{
+            const name=np(p,'Var Name'); const env=np(p,'Environment'); const status=np(p,'Status'); const rotation=np(p,'Rotation Policy');
+            return `<tr><td class="mono">${name}</td><td>${env}</td><td>${status?tag(status,status==='Active'?'ok':'high'):'-'}</td><td>${rotation||'-'}</td></tr>`;
+        }).join('')||'<tr><td colspan="4" style="text-align:center;color:var(--text3)">No env config tracked yet</td></tr>';
+    }catch(e){ console.warn('Vault:',e); }
+}
+
+async function fetchReleases(){
+    try{
+        const d=await api('/api/dashboard/releases');
+        const ps=pages(d);
+        $('tbReleases').innerHTML=ps.map(p=>{
+            const ver=np(p,'Version'); const status=np(p,'Status'); const ms=np(p,'Milestone');
+            const tests=np(p,'All Tests Pass'); const reg=np(p,'Regression Free'); const cve=np(p,'No Critical CVEs');
+            return `<tr><td class="mono">${ver}</td><td>${tag(status||'Draft',status==='Released'?'ok':'open')}</td><td>${ms}</td><td>${tests?'&#10003;':'&#10007;'}</td><td>${reg?'&#10003;':'&#10007;'}</td><td>${cve?'&#10003;':'&#10007;'}</td></tr>`;
+        }).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--text3)">No releases yet</td></tr>';
+    }catch(e){ console.warn('Releases:',e); }
+}
+
+async function fetchBenchmarks(){
+    try{
+        const d=await api('/api/dashboard/benchmarks');
+        const ps=pages(d);
+        const normal=ps.filter(p=>np(p,'Status')==='Normal').length;
+        const regressed=ps.filter(p=>np(p,'Status')==='Regressed').length;
+        $('bTotal').textContent=ps.length; $('bNormal').textContent=normal; $('bRegressed').textContent=regressed;
+        chart('chartBench',{type:'bar',data:{labels:['Normal','Warning','Regressed'],datasets:[{data:[normal,ps.length-normal-regressed,regressed],backgroundColor:['#22c55e88','#f59e0b88','#ef444488']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});
+    }catch(e){ console.warn('Benchmarks:',e); }
+}
+
+// ═══════════════════════════════════════════════
+// SETTINGS — Server config display
+// ═══════════════════════════════════════════════
+async function fetchSettings(){
+    // Connection status
+    const parts=[];
+    try{
+        const gh=await api('/api/github/connection');
+        parts.push(`<div style="margin-bottom:12px;"><strong style="color:var(--text)">GitHub</strong><br>${gh.connected?'<span style="color:var(--green)">&#10003; Connected</span> &mdash; '+gh.repos.join(', '):'<span style="color:var(--yellow)">&#9888; Not configured</span> &mdash; Enter your token below'}</div>`);
+        // Populate repos field if not already filled
+        if(gh.repos && gh.repos.length && !$('cfgGithubRepos').value) $('cfgGithubRepos').value=gh.repos.join(', ');
+        // Show webhook URL guide if repos are configured
+        if(gh.repos && gh.repos.length){
+            const c=cfg();
+            $('webhookUrlGuide').style.display='block';
+            $('webhookUrlValue').textContent=c.apiUrl+'/webhook/github';
+        }
+    }catch{ parts.push('<div style="margin-bottom:12px;"><strong>GitHub</strong><br><span style="color:var(--red)">&#10007; Unreachable</span></div>'); }
+    try{
+        const nt=await api('/api/notion/connection');
+        parts.push(`<div style="margin-bottom:12px;"><strong style="color:var(--text)">Notion</strong><br>${nt.connected?'<span style="color:var(--green)">&#10003; Connected</span> &mdash; Workspace: '+nt.workspace_id:'<span style="color:var(--yellow)">&#9888; Not configured</span> &mdash; Enter your token below'}</div>`);
+        if(nt.workspace_id && !$('cfgWorkspaceId').value) $('cfgWorkspaceId').value=nt.workspace_id;
+    }catch{ parts.push('<div style="margin-bottom:12px;"><strong>Notion</strong><br><span style="color:var(--red)">&#10007; Unreachable</span></div>'); }
+    try{
+        const cf=await api('/api/config');
+        const authInfo = cf.auth||{};
+        parts.push(`<div><strong style="color:var(--text)">Claude AI</strong><br>${authInfo.anthropic_configured?'<span style="color:var(--green)">&#10003; Configured</span> &mdash; Model: '+(cf.claude?.model||'?'):'<span style="color:var(--yellow)">&#9888; Not configured</span> &mdash; Enter your API key below'}</div>`);
+    }catch{ parts.push('<div><strong>Claude</strong><br><span style="color:var(--red)">&#10007; Unreachable</span></div>'); }
+    $('settingsConnStatus').innerHTML=parts.join('');
+
+    // Populate server host/port fields from config
+    try{
+        const sc=await api('/api/config');
+        if(sc.server?.host && !$('cfgServerHost').value) $('cfgServerHost').value=sc.server.host;
+        if(sc.server?.port && !$('cfgServerPort').value) $('cfgServerPort').value=sc.server.port;
+    }catch{}
+
+    // Server config
+    try{
+        const cf=await api('/api/config');
+        let html='<div class="g g2" style="gap:12px;">';
+        html+=`<div><strong style="color:var(--text)">Server</strong><br><span style="color:var(--text2)">${cf.server?.host||'?'}:${cf.server?.port||'?'}</span></div>`;
+        html+=`<div><strong style="color:var(--text)">GitHub Repos</strong><br><span style="color:var(--text2)">${(cf.github?.repos||[]).join(', ')||'None'}</span></div>`;
+        html+=`<div><strong style="color:var(--text)">Webhook Endpoint</strong><br><span style="color:var(--text2)">${cf.github?.webhook_endpoint||'/webhook/github'}</span></div>`;
+        html+=`<div><strong style="color:var(--text)">Claude Model</strong><br><span style="color:var(--text2)">${cf.claude?.model||'N/A'}</span></div>`;
+        html+=`<div><strong style="color:var(--text)">Databases Configured</strong><br><span style="color:var(--text2)">${cf.databases?.configured_count||0} / ${cf.databases?.total||22}</span></div>`;
+        html+=`<div><strong style="color:var(--text)">Auth Status</strong><br>`;
+        const a=cf.auth||{};
+        html+=`GitHub: ${a.github_configured?'<span style="color:var(--green)">&#10003;</span>':'<span style="color:var(--red)">&#10007;</span>'} `;
+        html+=`Notion: ${a.notion_configured?'<span style="color:var(--green)">&#10003;</span>':'<span style="color:var(--red)">&#10007;</span>'} `;
+        html+=`Claude: ${a.anthropic_configured?'<span style="color:var(--green)">&#10003;</span>':'<span style="color:var(--red)">&#10007;</span>'}`;
+        html+=`</div>`;
+        if(cf.schedule){
+            html+=`<div><strong style="color:var(--text)">Schedules</strong><br>`;
+            for(const[k,v] of Object.entries(cf.schedule)){
+                html+=`<span style="color:var(--text3)">${k}:</span> <code>${v}</code><br>`;
+            }
+            html+=`</div>`;
+        }
+        if(cf.thresholds){
+            html+=`<div><strong style="color:var(--text)">Thresholds</strong><br>`;
+            for(const[k,v] of Object.entries(cf.thresholds)){
+                html+=`<span style="color:var(--text3)">${k}:</span> ${v}<br>`;
+            }
+            html+=`</div>`;
+        }
+        html+='</div>';
+        $('serverConfig').innerHTML=html;
+    }catch{ $('serverConfig').innerHTML='<span style="color:var(--red)">Could not load server config</span>'; }
+}
+
+// ═══════════════════════════════════════════════
+// SETUP WIZARD
+// ═══════════════════════════════════════════════
+async function checkSetupStatus(){
+    try{
+        const s=await api('/api/setup/status');
+        const wiz=$('setupWizard');
+        // Show wizard if not fully initialized
+        if(!s.initialized){
+            wiz.style.display='block';
+            // Step 1: Connect Notion
+            const s1=$('wizStep1'), s2=$('wizStep2'), s3=$('wizStep3'), s4=$('wizStep4');
+            if(s.notion_ready){
+                s1.style.opacity='1'; s1.style.borderLeftColor='var(--green)';
+                s1.innerHTML='<div style="font-weight:700;margin-bottom:6px;color:var(--green)">&#10003; 1. Notion Connected</div><p style="font-size:11px;color:var(--text3)">Token and workspace configured</p>';
+                // Enable step 2
+                s2.style.opacity='1'; s2.style.borderLeft='3px solid var(--accent)';
+                $('wizInitBtn').disabled=false;
+            }
+            if(s.databases_configured){
+                s2.style.opacity='1'; s2.style.borderLeftColor='var(--green)';
+                s2.innerHTML='<div style="font-weight:700;margin-bottom:6px;color:var(--green)">&#10003; 2. Databases Initialized</div><p style="font-size:11px;color:var(--text3)">23 Notion databases created</p>';
+                // Enable step 3
+                s3.style.opacity='1'; s3.style.borderLeft='3px solid var(--accent)';
+                s3.querySelector('button').disabled=false;
+            }
+            if(s.github_ready){
+                s3.style.opacity='1'; s3.style.borderLeftColor='var(--green)';
+                s3.innerHTML='<div style="font-weight:700;margin-bottom:6px;color:var(--green)">&#10003; 3. GitHub Connected</div><p style="font-size:11px;color:var(--text3)">Repos configured and polling</p>';
+                // Enable step 4
+                s4.style.opacity='1'; s4.style.borderLeft='3px solid var(--accent)';
+                s4.querySelector('button').disabled=false;
+            }
+            if(s.ai_ready){
+                s4.style.opacity='1'; s4.style.borderLeftColor='var(--green)';
+                s4.innerHTML='<div style="font-weight:700;margin-bottom:6px;color:var(--green)">&#10003; 4. AI Connected</div><p style="font-size:11px;color:var(--text3)">Claude intelligence active</p>';
+            }
+            // If all 4 done, mark complete and hide after a moment
+            if(s.notion_ready && s.databases_configured && s.github_ready && s.ai_ready){
+                wiz.style.borderColor='var(--green)';
+                wiz.querySelector('.card-title').textContent='Setup Complete!';
+                wiz.querySelector('.card-title').style.color='var(--green)';
+                setTimeout(()=>{ wiz.style.display='none'; },5000);
+            }
+        } else {
+            wiz.style.display='none';
+        }
+    }catch(e){ console.warn('Setup status:',e); }
+}
+
+window.runNotionSetup = async function(){
+    const btn=$('wizInitBtn');
+    const status=$('wizInitStatus');
+    btn.disabled=true; btn.textContent='Initializing...';
+    status.textContent='Creating 23 databases, relations, and sample data...';
+    status.style.color='var(--accent)';
+    try{
+        const c=cfg();
+        const r=await fetch(c.apiUrl+'/api/setup/notion',{method:'POST',signal:AbortSignal.timeout(120000)});
+        const j=await r.json();
+        if(r.ok){
+            status.textContent='Done! All databases created.';
+            status.style.color='var(--green)';
+            btn.textContent='Initialized';
+            // Refresh wizard state and connections
+            setTimeout(()=>{ checkSetupStatus(); fetchConnections(); fetchSettings(); fetchAll(); },1000);
+        } else {
+            status.textContent='Error: '+(j.error||'Unknown');
+            status.style.color='var(--red)';
+            btn.disabled=false; btn.textContent='Retry';
+        }
+    }catch(e){
+        status.textContent='Failed: '+e.message;
+        status.style.color='var(--red)';
+        btn.disabled=false; btn.textContent='Retry';
+    }
+};
+
+// ── Fetch all ──
+async function fetchAll(){
+    fetchHealth(); fetchEvents(); fetchRfcs(); fetchVulns();
+    fetchReviews(); fetchModules(); fetchVault(); fetchReleases(); fetchBenchmarks();
+    fetchConnections(); fetchSettings(); fetchHomeNotionStats();
+    checkSetupStatus();
+}
+
+// ── Connection check ──
+async function checkConnection(){
+    const c=cfg();
+    try{
+        const r=await fetch(c.apiUrl+'/health',{signal:AbortSignal.timeout(3000)});
+        if(r.ok){
+            $('statusDot').className='status-dot on';
+            $('statusText').textContent='Connected';
+            return true;
+        }
+    }catch{}
+    $('statusDot').className='status-dot off';
+    $('statusText').textContent='Disconnected';
+    return false;
+}
+
+// ── Init ──
+const c=cfg();
+$('cfgUrl').value=c.apiUrl; $('cfgRefresh').value=c.refreshInterval;
+loadRepoSelector();
+checkConnection().then(ok=>{ if(ok){ checkFirstStart(); fetchAll(); } });
+setInterval(()=>{ checkConnection().then(ok=>{ if(ok) fetchAll(); }); }, c.refreshInterval*1000);
+
+})();
+</script>
+</body>
+</html>

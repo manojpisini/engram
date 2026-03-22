@@ -1,0 +1,233 @@
+name: ENGRAM Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v0.1.0)'
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+  BINARY_NAME: engram
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            archive: tar.gz
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            archive: tar.gz
+            cross: true
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            archive: tar.gz
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            archive: tar.gz
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            archive: zip
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install cross (Linux ARM)
+        if: matrix.cross
+        run: cargo install cross --locked
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-${{ matrix.target }}-cargo-release-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build binary
+        run: |
+          if [ "${{ matrix.cross }}" = "true" ]; then
+            cross build --release --bin engram --target ${{ matrix.target }}
+          else
+            cargo build --release --bin engram --target ${{ matrix.target }}
+          fi
+        shell: bash
+
+      - name: Determine paths
+        id: paths
+        shell: bash
+        run: |
+          VERSION="${{ github.ref_name }}"
+          if [ -z "$VERSION" ] || [ "$VERSION" = "main" ]; then
+            VERSION="${{ github.event.inputs.tag }}"
+          fi
+          VERSION="${VERSION#v}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+          EXT=""
+          if [[ "${{ matrix.target }}" == *"windows"* ]]; then
+            EXT=".exe"
+          fi
+          echo "ext=$EXT" >> $GITHUB_OUTPUT
+
+          ARCHIVE_NAME="engram-${VERSION}-${{ matrix.target }}"
+          echo "archive_name=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
+
+      - name: Package (Unix)
+        if: matrix.archive == 'tar.gz'
+        shell: bash
+        run: |
+          STAGING="staging"
+          mkdir -p "$STAGING"
+          cp "target/${{ matrix.target }}/release/engram" "$STAGING/"
+          cp engram.toml "$STAGING/"
+          cp README.md "$STAGING/"
+          cp LICENSE "$STAGING/"
+          cp -r dashboard "$STAGING/"
+          cp -r ci "$STAGING/"
+          tar czf "${{ steps.paths.outputs.archive_name }}.tar.gz" -C "$STAGING" .
+
+      - name: Package (Windows)
+        if: matrix.archive == 'zip'
+        shell: bash
+        run: |
+          STAGING="staging"
+          mkdir -p "$STAGING"
+          cp "target/${{ matrix.target }}/release/engram.exe" "$STAGING/"
+          cp engram.toml "$STAGING/"
+          cp README.md "$STAGING/"
+          cp LICENSE "$STAGING/"
+          cp -r dashboard "$STAGING/"
+          cp -r ci "$STAGING/"
+          cd "$STAGING" && 7z a -tzip "../${{ steps.paths.outputs.archive_name }}.zip" . && cd ..
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.paths.outputs.archive_name }}
+          path: |
+            *.tar.gz
+            *.zip
+
+  # Build .deb package
+  deb:
+    name: Build .deb
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ubuntu-cargo-deb-${{ hashFiles('**/Cargo.lock') }}
+      - name: Build and package
+        run: bash packaging/debian/build.sh "${GITHUB_REF_NAME#v}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: engram-deb
+          path: packaging/debian/*.deb
+
+  release:
+    name: Create GitHub Release
+    needs: [build, deb]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Collect release files
+        run: |
+          mkdir -p release
+          find artifacts -type f \( -name "*.tar.gz" -o -name "*.zip" -o -name "*.deb" \) -exec cp {} release/ \;
+          ls -la release/
+
+      - name: Generate checksums
+        run: |
+          cd release
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Determine version
+        id: version
+        run: |
+          TAG="${{ github.ref_name }}"
+          if [ -z "$TAG" ] || [ "$TAG" = "main" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "version=${TAG#v}" >> $GITHUB_OUTPUT
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ENGRAM ${{ steps.version.outputs.version }}
+          body: |
+            ## ENGRAM ${{ steps.version.outputs.version }}
+
+            **Engineering Intelligence, etched in Notion.**
+
+            ### Installation
+
+            Download the archive for your platform, extract, and run:
+
+            ```bash
+            ./engram    # Opens dashboard at http://localhost:3000
+            ```
+
+            The setup wizard guides you through connecting Notion, GitHub, and Claude on first launch.
+
+            ### Platforms
+
+            | File | Platform |
+            |------|----------|
+            | `engram-*-x86_64-unknown-linux-gnu.tar.gz` | Linux x86_64 |
+            | `engram-*-aarch64-unknown-linux-gnu.tar.gz` | Linux ARM64 |
+            | `engram-*-x86_64-apple-darwin.tar.gz` | macOS Intel |
+            | `engram-*-aarch64-apple-darwin.tar.gz` | macOS Apple Silicon |
+            | `engram-*-x86_64-pc-windows-msvc.zip` | Windows x86_64 |
+            | `engram_*_amd64.deb` | Debian/Ubuntu |
+
+            ### Verify
+
+            ```bash
+            sha256sum -c SHA256SUMS.txt
+            ```
+
+            ### Build from source
+
+            ```bash
+            cargo build --release --bin engram
+            ```
+          files: release/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

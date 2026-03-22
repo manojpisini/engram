@@ -1,0 +1,28 @@
+[Unit]
+Description=ENGRAM Engineering Intelligence Platform
+Documentation=https://github.com/manojpisini/engram
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=engram
+Group=engram
+ExecStart=/usr/bin/engram
+WorkingDirectory=/etc/engram
+Environment=ENGRAM_CONFIG=/etc/engram/engram.toml
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=engram
+
+# Hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/etc/engram /var/log/engram
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

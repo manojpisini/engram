@@ -1,0 +1,78 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/engram-core",
+    "crates/engram-types",
+    "crates/engram-decisions",
+    "crates/engram-pulse",
+    "crates/engram-shield",
+    "crates/engram-atlas",
+    "crates/engram-vault",
+    "crates/engram-review",
+    "crates/engram-health",
+    "crates/engram-timeline",
+    "crates/engram-release",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/manojpisini/engram"
+
+[workspace.dependencies]
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# Web framework
+axum = { version = "0.7", features = ["json", "macros"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors", "trace", "fs"] }
+
+# HTTP client
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+
+# Date/time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Cron scheduling
+tokio-cron-scheduler = "0.10"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# Error handling
+anyhow = "1"
+thiserror = "1"
+
+# UUID generation
+uuid = { version = "1", features = ["v4", "serde"] }
+
+# Regex
+regex = "1"
+
+# HMAC for webhook verification
+hmac = "0.12"
+sha2 = "0.10"
+hex = "0.4"
+
+# Environment
+dotenvy = "0.15"
+
+# Shared types
+engram-types = { path = "crates/engram-types" }
+engram-decisions = { path = "crates/engram-decisions" }
+engram-pulse = { path = "crates/engram-pulse" }
+engram-shield = { path = "crates/engram-shield" }
+engram-atlas = { path = "crates/engram-atlas" }
+engram-vault = { path = "crates/engram-vault" }
+engram-review = { path = "crates/engram-review" }
+engram-health = { path = "crates/engram-health" }
+engram-timeline = { path = "crates/engram-timeline" }
+engram-release = { path = "crates/engram-release" }

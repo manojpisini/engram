@@ -1,0 +1,33 @@
+# Maintainer: ENGRAM Team <engram@manojpisini.com>
+pkgname=engram
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="ENGRAM — Engineering Intelligence, etched in Notion"
+arch=('x86_64')
+url="https://github.com/manojpisini/engram"
+license=('MIT')
+depends=('gcc-libs' 'ca-certificates')
+makedepends=('rust' 'cargo')
+backup=('etc/engram/engram.toml')
+
+build() {
+    cd "$srcdir/.."
+    cargo build --release --bin engram
+}
+
+package() {
+    cd "$srcdir/.."
+    install -Dm755 "target/release/engram" "$pkgdir/usr/bin/engram"
+    install -Dm644 "engram.toml" "$pkgdir/etc/engram/engram.toml"
+    install -Dm644 "packaging/systemd/engram.service" "$pkgdir/usr/lib/systemd/system/engram.service"
+    install -dm755 "$pkgdir/usr/share/engram/dashboard"
+    cp -r dashboard/* "$pkgdir/usr/share/engram/dashboard/"
+}
+
+post_install() {
+    useradd --system --no-create-home --shell /usr/sbin/nologin engram 2>/dev/null || true
+    mkdir -p /var/log/engram
+    chown engram:engram /var/log/engram
+    systemctl daemon-reload
+    echo "ENGRAM installed! Run: systemctl enable --now engram"
+}

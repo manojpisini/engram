@@ -1,0 +1,105 @@
+name: ENGRAM Notify
+# Posts PR lifecycle events to ENGRAM webhook.
+# Use as a reusable workflow or standalone.
+
+on:
+  workflow_call:
+    inputs:
+      engram_webhook_url:
+        required: true
+        type: string
+      engram_project_id:
+        required: true
+        type: string
+    secrets:
+      webhook_secret:
+        required: false
+
+  pull_request:
+    types: [opened, synchronize, closed]
+
+env:
+  ENGRAM_WEBHOOK_URL: ${{ inputs.engram_webhook_url || vars.ENGRAM_WEBHOOK_URL }}
+  ENGRAM_PROJECT_ID: ${{ inputs.engram_project_id || vars.ENGRAM_PROJECT_ID }}
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract PR metadata
+        id: pr_meta
+        run: |
+          PR_BODY='${{ github.event.pull_request.body }}'
+
+          # Extract RFC references from PR body (RFC-0001, RFC-0042, etc.)
+          RFC_REFS=$(echo "$PR_BODY" | grep -oP 'RFC-\d{4}' | sort -u | jq -R -s 'split("\n") | map(select(length > 0))') || RFC_REFS='[]'
+          echo "rfc_refs=$RFC_REFS" >> $GITHUB_OUTPUT
+
+          # Determine event type
+          if [ "${{ github.event.action }}" = "closed" ] && [ "${{ github.event.pull_request.merged }}" = "true" ]; then
+            echo "event_type=pr_merged" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.action }}" = "opened" ]; then
+            echo "event_type=pr_opened" >> $GITHUB_OUTPUT
+          else
+            echo "event_type=pr_updated" >> $GITHUB_OUTPUT
+          fi
+
+          # Get diff stats
+          ADDITIONS=${{ github.event.pull_request.additions || 0 }}
+          DELETIONS=${{ github.event.pull_request.deletions || 0 }}
+          CHANGED=${{ github.event.pull_request.changed_files || 0 }}
+          echo "additions=$ADDITIONS" >> $GITHUB_OUTPUT
+          echo "deletions=$DELETIONS" >> $GITHUB_OUTPUT
+          echo "files_changed=$CHANGED" >> $GITHUB_OUTPUT
+
+      - name: Post to ENGRAM webhook
+        if: env.ENGRAM_WEBHOOK_URL != ''
+        run: |
+          EVENT_TYPE="${{ steps.pr_meta.outputs.event_type }}"
+
+          PAYLOAD=$(jq -n \
+            --arg event_type "$EVENT_TYPE" \
+            --arg repo "${{ github.repository }}" \
+            --argjson pr_number "${{ github.event.pull_request.number }}" \
+            --arg title "${{ github.event.pull_request.title }}" \
+            --arg author "${{ github.event.pull_request.user.login }}" \
+            --arg branch "${{ github.event.pull_request.head.ref }}" \
+            --arg target_branch "${{ github.event.pull_request.base.ref }}" \
+            --arg diff_url "${{ github.event.pull_request.diff_url }}" \
+            --arg commit_sha "${{ github.event.pull_request.merge_commit_sha || github.sha }}" \
+            --arg project_id "$ENGRAM_PROJECT_ID" \
+            --argjson additions "${{ steps.pr_meta.outputs.additions }}" \
+            --argjson deletions "${{ steps.pr_meta.outputs.deletions }}" \
+            --argjson files_changed "${{ steps.pr_meta.outputs.files_changed }}" \
+            --argjson rfc_refs '${{ steps.pr_meta.outputs.rfc_refs }}' \
+            '{
+              event: $event_type,
+              repo: $repo,
+              pr_number: $pr_number,
+              title: $title,
+              author: $author,
+              branch: $branch,
+              target_branch: $target_branch,
+              diff_url: $diff_url,
+              commit_sha: $commit_sha,
+              project_id: $project_id,
+              additions: $additions,
+              deletions: $deletions,
+              files_changed: $files_changed,
+              rfc_references: $rfc_refs
+            }')
+
+          echo "Posting $EVENT_TYPE event to ENGRAM..."
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST "${ENGRAM_WEBHOOK_URL}/webhook/github" \
+            -H "Content-Type: application/json" \
+            -H "X-GitHub-Event: pull_request" \
+            -d "$PAYLOAD")
+
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo "Successfully posted to ENGRAM (HTTP $HTTP_CODE)"
+          else
+            echo "::warning::ENGRAM webhook returned HTTP $HTTP_CODE"
+          fi

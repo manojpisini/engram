@@ -1,0 +1,41 @@
+[package]
+name = "engram-core"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "engram"
+path = "src/main.rs"
+
+[dependencies]
+engram-types = { workspace = true }
+engram-decisions = { workspace = true }
+engram-pulse = { workspace = true }
+engram-shield = { workspace = true }
+engram-atlas = { workspace = true }
+engram-vault = { workspace = true }
+engram-review = { workspace = true }
+engram-health = { workspace = true }
+engram-timeline = { workspace = true }
+engram-release = { workspace = true }
+
+tokio = { workspace = true }
+axum = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+chrono = { workspace = true }
+tokio-cron-scheduler = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+uuid = { workspace = true }
+hmac = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+regex = { workspace = true }
+dotenvy = { workspace = true }

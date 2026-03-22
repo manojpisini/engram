@@ -1,0 +1,12 @@
+/target
+.env
+forge.toml
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+engram.log
+.vscode
+.claude
+.git

@@ -1,0 +1,66 @@
+# ENGRAM Runtime Configuration
+# All tokens and connections are configured from the dashboard setup wizard.
+# Environment variables are also supported as an optional override for server deployments.
+
+[workspace]
+notion_workspace_id = ""
+
+[auth]
+# Populated from the dashboard setup wizard — never commit real tokens.
+notion_mcp_token = ""
+anthropic_api_key = ""
+github_token = ""
+webhook_secret = ""
+
+[server]
+host = "127.0.0.1"
+port = 3000
+
+[thresholds]
+warning_delta_pct = 5.0
+critical_delta_pct = 15.0
+production_impact_delta_pct = 30.0
+baseline_window = 5
+pattern_debt_threshold = 5
+auto_rfc_severities = ["Critical", "High"]
+rfc_stale_days = 14
+
+[schedule]
+daily_audit = "0 0 2 * * * *"
+weekly_digest = "0 0 9 * * 1 *"
+weekly_rfc_staleness = "0 0 10 * * 1 *"
+daily_rotation_check = "0 0 3 * * * *"
+weekly_knowledge_gap_scan = "0 0 11 * * 1 *"
+
+[github]
+repos = []
+
+[claude]
+model = "claude-sonnet-4-20250514"
+max_tokens = 4096
+
+# Database IDs — auto-populated when you run Notion setup from dashboard
+[databases]
+projects = ""
+rfcs = ""
+rfc_comments = ""
+benchmarks = ""
+regressions = ""
+performance_baselines = ""
+dependencies = ""
+audit_runs = ""
+modules = ""
+onboarding_tracks = ""
+onboarding_steps = ""
+knowledge_gaps = ""
+env_config = ""
+config_snapshots = ""
+secret_rotation_log = ""
+pr_reviews = ""
+review_playbook = ""
+review_patterns = ""
+tech_debt = ""
+health_reports = ""
+engineering_digest = ""
+events = ""
+releases = ""
