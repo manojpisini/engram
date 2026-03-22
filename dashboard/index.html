@@ -181,15 +181,42 @@
         .btn-sm { padding:6px 16px; font-size:11px; }
 
         /* ── First-start overlay ── */
-        .first-start-overlay { position:fixed; inset:0; z-index:9999; background:var(--bg); display:flex; align-items:center; justify-content:center; }
-        .first-start-box { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:48px; max-width:560px; width:90%; }
-        .first-start-box h1 { font-size:28px; font-weight:800; color:var(--accent); letter-spacing:3px; text-align:center; margin-bottom:4px; }
-        .first-start-box .tagline { text-align:center; color:var(--text3); font-size:12px; margin-bottom:32px; }
-        .first-start-box .fs-step { margin-bottom:20px; padding:16px; background:var(--surface2); border:1px solid var(--border); border-radius:10px; }
-        .first-start-box .fs-step h3 { font-size:13px; font-weight:700; color:var(--text); margin-bottom:10px; }
-        .first-start-box .fs-step .form-group { margin-top:10px; }
-        .first-start-box .fs-actions { display:flex; justify-content:center; gap:12px; margin-top:24px; }
-        .first-start-box .fs-status { text-align:center; font-size:11px; margin-top:12px; }
+        .first-start-overlay { position:fixed; inset:0; z-index:9999; background:var(--bg); display:flex; align-items:flex-start; justify-content:center; overflow-y:auto; overflow-x:hidden; }
+        .first-start-box { width:100%; max-width:1100px; padding:32px 40px 60px; margin:0 auto; }
+        .first-start-header { text-align:center; margin-bottom:32px; }
+        .first-start-header h1 { font-size:36px; font-weight:800; color:var(--accent); letter-spacing:6px; margin-bottom:6px; }
+        .first-start-header .tagline { color:var(--text3); font-size:14px; letter-spacing:1px; }
+        .first-start-header .tagline-sub { color:var(--text3); font-size:11px; margin-top:8px; opacity:0.6; }
+        .fs-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:32px; }
+        @media(max-width:860px) { .fs-grid { grid-template-columns:1fr; } }
+        .fs-step { padding:28px; background:var(--surface); border:1px solid var(--border); border-radius:14px; position:relative; transition:border-color 0.3s, box-shadow 0.3s; }
+        .fs-step:hover { border-color:var(--border2); box-shadow:0 4px 24px rgba(0,0,0,0.3); }
+        .fs-step.fs-full { grid-column:1/-1; }
+        .fs-step-num { position:absolute; top:-12px; left:24px; background:var(--accent); color:var(--bg); font-size:11px; font-weight:800; padding:3px 12px; border-radius:20px; letter-spacing:1px; }
+        .fs-step h3 { font-size:16px; font-weight:700; color:var(--text); margin-bottom:4px; margin-top:8px; }
+        .fs-step .fs-desc { font-size:11px; color:var(--text3); margin-bottom:16px; line-height:1.5; }
+        .fs-step .form-group { margin-top:14px; }
+        .fs-step .form-group label { display:block; font-size:10px; text-transform:uppercase; letter-spacing:1.2px; color:var(--text2); margin-bottom:6px; font-weight:600; }
+        .fs-step .form-group input { width:100%; background:var(--surface2); border:1px solid var(--border2); border-radius:8px; padding:12px 16px; color:var(--text); font-family:'JetBrains Mono','Fira Code',monospace; font-size:13px; transition:border-color 0.2s, box-shadow 0.2s; }
+        .fs-step .form-group input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(245,158,11,0.1); }
+        .fs-step .form-group input::placeholder { color:var(--text3); font-family:'JetBrains Mono','Fira Code',monospace; }
+        .fs-step .form-hint { font-size:10px; color:var(--text3); margin-top:6px; line-height:1.5; }
+        .fs-step .form-hint a { color:var(--accent); }
+        .fs-step .form-hint.hint-accent { color:var(--accent); }
+        .fs-server-grid { display:grid; grid-template-columns:1fr 120px; gap:14px; }
+        @media(max-width:860px) { .fs-server-grid { grid-template-columns:1fr 100px; } }
+        .fs-actions { display:flex; justify-content:center; gap:16px; margin-top:8px; }
+        .fs-actions .btn { padding:14px 48px; font-size:14px; border-radius:10px; letter-spacing:1px; }
+        .fs-actions .btn-ghost { padding:14px 32px; }
+        .fs-status { text-align:center; font-size:12px; margin-top:16px; min-height:20px; }
+        .fs-progress { width:100%; max-width:400px; margin:0 auto 24px; display:flex; align-items:center; gap:0; }
+        .fs-progress-step { flex:1; text-align:center; position:relative; }
+        .fs-progress-step::before { content:''; position:absolute; top:12px; left:0; right:0; height:2px; background:var(--border); z-index:0; }
+        .fs-progress-step:first-child::before { left:50%; }
+        .fs-progress-step:last-child::before { right:50%; }
+        .fs-progress-dot { width:24px; height:24px; border-radius:50%; background:var(--surface2); border:2px solid var(--border2); display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:var(--text3); position:relative; z-index:1; transition:all 0.3s; }
+        .fs-progress-step.active .fs-progress-dot { background:var(--accent); border-color:var(--accent); color:var(--bg); }
+        .fs-progress-label { font-size:9px; text-transform:uppercase; letter-spacing:1px; color:var(--text3); margin-top:6px; }
 
         /* ── GitHub repo cards ── */
         .repo-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; cursor:pointer; transition:border-color 0.2s; }
@@ -215,70 +242,99 @@
 <!-- FIRST-START SETUP OVERLAY -->
 <div class="first-start-overlay" id="firstStartOverlay" style="display:none;">
     <div class="first-start-box">
-        <h1>ENGRAM</h1>
-        <div class="tagline">Engineering Intelligence, etched in Notion</div>
 
-        <div class="fs-step">
-            <h3>1. Notion Workspace</h3>
-            <div class="form-group">
-                <label>Notion Integration Token</label>
-                <input id="fsNotionToken" type="password" placeholder="ntn_..." autocomplete="off">
-                <span style="font-size:10px;color:var(--text3)">Create at notion.so/profile/integrations — give full access to a workspace</span>
-            </div>
-            <div class="form-group">
-                <label>Workspace ID</label>
-                <input id="fsWorkspaceId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
-                <span style="font-size:10px;color:var(--text3)">Found in your Notion workspace URL</span>
-            </div>
+        <div class="first-start-header">
+            <h1>ENGRAM</h1>
+            <div class="tagline">Engineering Intelligence, etched in Notion</div>
+            <div class="tagline-sub">Complete the setup below to connect your workspace. All fields are saved locally.</div>
         </div>
 
-        <div class="fs-step">
-            <h3>2. GitHub</h3>
-            <div class="form-group">
-                <label>GitHub Personal Access Token</label>
-                <input id="fsGithubToken" type="password" placeholder="github_pat_..." autocomplete="off">
-                <span style="font-size:10px;color:var(--text3)">github.com/settings/tokens — needs repo, read:org scopes</span>
-            </div>
-            <div class="form-group">
-                <label>Repos to Track (comma-separated)</label>
-                <input id="fsGithubRepos" placeholder="owner/repo, owner/other-repo">
-                <span style="font-size:10px;color:var(--accent)">After setup, you'll need to add a webhook URL to each repo's GitHub Settings &rarr; Webhooks. The URL will be shown in Settings.</span>
-            </div>
+        <!-- Progress indicator -->
+        <div class="fs-progress">
+            <div class="fs-progress-step active"><div class="fs-progress-dot">1</div><div class="fs-progress-label">Notion</div></div>
+            <div class="fs-progress-step active"><div class="fs-progress-dot">2</div><div class="fs-progress-label">GitHub</div></div>
+            <div class="fs-progress-step active"><div class="fs-progress-dot">3</div><div class="fs-progress-label">AI</div></div>
+            <div class="fs-progress-step active"><div class="fs-progress-dot">4</div><div class="fs-progress-label">Server</div></div>
         </div>
 
-        <div class="fs-step">
-            <h3>3. AI Intelligence</h3>
-            <div class="form-group">
-                <label>Anthropic API Key</label>
-                <input id="fsAnthropicKey" type="password" placeholder="sk-ant-..." autocomplete="off">
-                <span style="font-size:10px;color:var(--text3)">From console.anthropic.com/settings/keys</span>
-            </div>
-        </div>
+        <div class="fs-grid">
 
-        <div class="fs-step">
-            <h3>4. Server Configuration (optional)</h3>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <!-- 1. Notion -->
+            <div class="fs-step">
+                <div class="fs-step-num">STEP 1</div>
+                <h3>Notion Workspace</h3>
+                <div class="fs-desc">Connect your Notion workspace to store all engineering intelligence data.</div>
                 <div class="form-group">
-                    <label>Host / IP Address</label>
-                    <input id="fsServerHost" placeholder="127.0.0.1">
-                    <span style="font-size:10px;color:var(--text3)">Default: 127.0.0.1 (local only). Use 0.0.0.0 for all interfaces or a domain for server mode</span>
+                    <label>Integration Token</label>
+                    <input id="fsNotionToken" type="password" placeholder="ntn_..." autocomplete="off" spellcheck="false">
+                    <div class="form-hint">Create at <a href="https://www.notion.so/profile/integrations" target="_blank">notion.so/profile/integrations</a> — give full access to a workspace</div>
                 </div>
                 <div class="form-group">
-                    <label>Port</label>
-                    <input id="fsServerPort" type="number" placeholder="3000" min="1" max="65535">
+                    <label>Workspace ID</label>
+                    <input id="fsWorkspaceId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" spellcheck="false">
+                    <div class="form-hint">Found in your Notion workspace URL after the workspace name</div>
                 </div>
             </div>
-            <div class="form-group">
-                <label>Webhook Secret (optional)</label>
-                <input id="fsWebhookSecret" placeholder="your-webhook-secret">
+
+            <!-- 2. GitHub -->
+            <div class="fs-step">
+                <div class="fs-step-num">STEP 2</div>
+                <h3>GitHub Connection</h3>
+                <div class="fs-desc">Link your GitHub account to ingest webhooks from your repositories.</div>
+                <div class="form-group">
+                    <label>Personal Access Token</label>
+                    <input id="fsGithubToken" type="password" placeholder="github_pat_..." autocomplete="off" spellcheck="false">
+                    <div class="form-hint">Create at <a href="https://github.com/settings/tokens?type=beta" target="_blank">github.com/settings/tokens</a> — needs <code>repo</code> and <code>read:org</code> scopes</div>
+                </div>
+                <div class="form-group">
+                    <label>Repositories to Track</label>
+                    <input id="fsGithubRepos" placeholder="owner/repo, owner/other-repo" spellcheck="false">
+                    <div class="form-hint hint-accent">After setup, add a webhook URL to each repo&rsquo;s GitHub Settings &rarr; Webhooks. The URL will be shown in Settings.</div>
+                </div>
+                <div class="form-group">
+                    <label>Webhook Secret</label>
+                    <input id="fsWebhookSecret" placeholder="your-webhook-secret" spellcheck="false">
+                    <div class="form-hint">Random string for HMAC-SHA256 verification. Use the same secret in GitHub repo &rarr; Settings &rarr; Webhooks.</div>
+                </div>
             </div>
+
+            <!-- 3. AI Intelligence -->
+            <div class="fs-step">
+                <div class="fs-step-num">STEP 3</div>
+                <h3>AI Intelligence</h3>
+                <div class="fs-desc">Power the 9 analysis agents with Claude to generate engineering insights.</div>
+                <div class="form-group">
+                    <label>Anthropic API Key</label>
+                    <input id="fsAnthropicKey" type="password" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+                    <div class="form-hint">Get your key from <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com/settings/keys</a></div>
+                </div>
+            </div>
+
+            <!-- 4. Server Config -->
+            <div class="fs-step">
+                <div class="fs-step-num">OPTIONAL</div>
+                <h3>Server Configuration</h3>
+                <div class="fs-desc">Defaults work for local use. Configure for server or custom network setups.</div>
+                <div class="fs-server-grid">
+                    <div class="form-group">
+                        <label>Host / IP Address</label>
+                        <input id="fsServerHost" placeholder="127.0.0.1" spellcheck="false">
+                        <div class="form-hint">Default: <code>127.0.0.1</code> (local). Use <code>0.0.0.0</code> for all interfaces.</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Port</label>
+                        <input id="fsServerPort" type="number" placeholder="3000" min="1" max="65535">
+                    </div>
+                </div>
+            </div>
+
         </div>
 
         <div class="fs-actions">
-            <button class="btn" onclick="submitFirstStart()">Save &amp; Initialize</button>
-            <button class="btn btn-ghost" onclick="skipFirstStart()">Skip for Now</button>
+            <button class="btn" onclick="submitFirstStart()">Save &amp; Initialize ENGRAM</button>
         </div>
         <div class="fs-status" id="fsStatus"></div>
+
     </div>
 </div>
 
