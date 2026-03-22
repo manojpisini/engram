@@ -688,7 +688,6 @@ struct ConfigUpdatePayload {
     anthropic_api_key: Option<String>,
     github_repos: Option<Vec<String>>,
     workspace_id: Option<String>,
-    parent_page_id: Option<String>,
     webhook_secret: Option<String>,
     server_host: Option<String>,
     server_port: Option<u16>,
@@ -718,9 +717,6 @@ async fn api_update_config(
     }
     if let Some(ref wid) = payload.workspace_id {
         new_config.workspace.notion_workspace_id = wid.clone();
-    }
-    if let Some(ref pid) = payload.parent_page_id {
-        new_config.workspace.parent_page_id = pid.clone();
     }
     if let Some(ref secret) = payload.webhook_secret {
         new_config.auth.webhook_secret = secret.clone();
@@ -777,18 +773,6 @@ fn persist_config_updates(
     }
     if let Some(ref wid) = payload.workspace_id {
         content = replace_toml_value(&content, "notion_workspace_id", &format!("\"{}\"", wid));
-    }
-    if let Some(ref pid) = payload.parent_page_id {
-        // Add parent_page_id under [workspace] if not present
-        if content.contains("parent_page_id") {
-            content = replace_toml_value(&content, "parent_page_id", &format!("\"{}\"", pid));
-        } else if let Some(pos) = content.find("notion_workspace_id") {
-            // Insert after the notion_workspace_id line
-            if let Some(nl) = content[pos..].find('\n') {
-                let insert_at = pos + nl + 1;
-                content.insert_str(insert_at, &format!("parent_page_id = \"{}\"\n", pid));
-            }
-        }
     }
     if let Some(ref repos) = payload.github_repos {
         let repos_str: Vec<String> = repos.iter().map(|r| format!("\"{}\"", r)).collect();
@@ -1054,10 +1038,9 @@ async fn api_setup_notion(
 
     let n = notion(&state);
     let workspace_id = c.workspace.notion_workspace_id.clone();
-    let parent_page_id = c.workspace.parent_page_id.clone();
 
-    // Step 1: Create all databases (auto-creates parent page)
-    let db_ids = match crate::setup::create_all_databases(&n, &workspace_id, &parent_page_id).await {
+    // Step 1: Create all databases (auto-creates parent page at workspace root)
+    let db_ids = match crate::setup::create_all_databases(&n, &workspace_id).await {
         Ok(ids) => ids,
         Err(e) => {
             error!("[Setup] Failed to create databases: {e}");

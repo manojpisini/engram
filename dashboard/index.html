@@ -291,25 +291,8 @@
                         <div class="help-warn">&#9888; You must also share your Notion page with the integration: open any page &rarr; ••• &rarr; "Add connections" &rarr; select ENGRAM</div>
                     </div>
                 </div>
-                <div class="form-group" style="margin-top:14px;">
-                    <label>Parent Page ID <span style="color:var(--text3);font-weight:400;font-size:10px;">(optional)</span></label>
-                    <input id="fsParentPageId" placeholder="Leave empty to auto-create at workspace root" spellcheck="false">
-                    <div class="form-hint">If workspace-root creation fails, share any Notion page with your integration and paste its page ID here</div>
-                    <div class="fs-help-toggle" onclick="toggleHelp(this)"><span class="arrow">&#9654;</span> How to get this</div>
-                    <div class="fs-help-box">
-                        <ol>
-                            <li>Open any page in Notion where you want ENGRAM databases</li>
-                            <li>Click <strong>•••</strong> (top right) &rarr; <strong>"Add connections"</strong> &rarr; select <strong>ENGRAM</strong></li>
-                            <li>Click <strong>"Share"</strong> (top right) &rarr; <strong>"Copy link"</strong></li>
-                            <li>The link looks like: <code>notion.so/Your-Page-<strong>abc123def456</strong></code></li>
-                            <li>The last 32 characters (after the last dash) is the Page ID</li>
-                            <li>Or: Click <strong>•••</strong> &rarr; <strong>"Copy link to page"</strong> &rarr; extract the ID from the URL</li>
-                        </ol>
-                        <div class="help-warn">&#9888; The page must be shared with your ENGRAM integration, otherwise database creation will fail.</div>
-                    </div>
-                </div>
-                <div style="margin-top:10px;padding:10px 14px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);border-radius:8px;">
-                    <div style="font-size:11px;color:var(--green);">&#10003; ENGRAM will automatically create a styled parent page with all 23 databases nested inside.</div>
+                <div style="margin-top:14px;padding:10px 14px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);border-radius:8px;">
+                    <div style="font-size:11px;color:var(--green);">&#10003; ENGRAM will automatically create a styled parent page at your workspace root with all 23 databases nested inside.</div>
                 </div>
             </div>
 
@@ -430,10 +413,6 @@
 <div class="topbar">
     <div class="topbar-left">
         <span class="logo">ENGRAM</span>
-        <span class="sep"></span>
-        <select class="repo-select" id="repoSelect" onchange="switchRepo(this.value)">
-            <option value="">All Repositories</option>
-        </select>
     </div>
     <div class="topbar-right">
         <input type="text" id="notionSearch" placeholder="Search Notion..." style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:6px 12px;color:var(--text);font-size:12px;font-family:inherit;width:200px;" onkeydown="if(event.key==='Enter')doNotionSearch()">
@@ -1078,13 +1057,50 @@ window.submitFirstStart = async function(){
     if(sp) body.server_port=parseInt(sp,10);
     const ws=$('fsWebhookSecret').value.trim();
     if(ws) body.webhook_secret=ws;
-    const pp=$('fsParentPageId').value.trim();
-    if(pp) body.parent_page_id=pp;
 
     if(!nt){
         status.textContent='Notion integration token is required to continue.';
         status.style.color='var(--red)';
         return;
+    }
+
+    // Validate repo names format
+    if(body.github_repos && body.github_repos.length){
+        for(const repo of body.github_repos){
+            if(!/^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/.test(repo)){
+                status.textContent='Invalid repo format: "'+repo+'". Use owner/repo format (e.g. manojpisini/engram).';
+                status.style.color='var(--red)';
+                return;
+            }
+        }
+    }
+
+    // Validate repos exist on GitHub if token is provided
+    if(gt && body.github_repos && body.github_repos.length){
+        status.textContent='Validating GitHub repositories...';
+        status.style.color='var(--accent)';
+        for(const repo of body.github_repos){
+            try{
+                const vr=await fetch('https://api.github.com/repos/'+repo,{
+                    headers:{'Authorization':'Bearer '+gt,'Accept':'application/vnd.github+json'},
+                    signal:AbortSignal.timeout(8000)
+                });
+                if(vr.status===404){
+                    status.textContent='Repository "'+repo+'" not found on GitHub. Check the name and your token permissions.';
+                    status.style.color='var(--red)';
+                    return;
+                }
+                if(vr.status===401||vr.status===403){
+                    status.textContent='GitHub token lacks permission to access "'+repo+'". Check token scopes.';
+                    status.style.color='var(--red)';
+                    return;
+                }
+            }catch(ve){
+                status.textContent='Could not verify repo "'+repo+'": '+ve.message;
+                status.style.color='var(--red)';
+                return;
+            }
+        }
     }
 
     try{
@@ -1163,61 +1179,12 @@ function timeAgo(d){ if(!d) return ''; const s=Math.floor((Date.now()-new Date(d
 function langColor(l){ const m={JavaScript:'#f1e05a',TypeScript:'#3178c6',Python:'#3572a5',Rust:'#dea584',Go:'#00add8',Java:'#b07219',Ruby:'#701516',C:'#555','C++':'#f34b7d','C#':'#178600',Shell:'#89e051',HTML:'#e34c26',CSS:'#563d7c'}; return m[l]||'#555'; }
 
 // ── Repo management ──
-// currentRepo = repo display name (e.g. "owner/repo")
-// currentProjectId = Notion project page ID (used for Notion DB filters)
-// repoToProjectId = map repo name → Notion project ID
 let currentRepo = null;
-let currentProjectId = null;
-let repoToProjectId = {};
-
-window.switchRepo = function(v){
-    currentRepo = v || null;
-    currentProjectId = v ? (repoToProjectId[v] || null) : null;
-    fetchAll();
-};
-
-function loadRepoSelector(){
-    const sel=$('repoSelect');
-    while(sel.options.length>1) sel.remove(1);
-    const added=new Set();
-    repoToProjectId = {};
-
-    // Load Notion projects first to build the repo→projectId map
-    api('/api/projects').then(d=>{
-        pages(d).forEach(p=>{
-            const name=np(p,'Name');
-            const pid=p.id||'';
-            if(name){
-                repoToProjectId[name]=pid;
-                if(!added.has(name)){ added.add(name); const o=document.createElement('option'); o.value=name; o.textContent=name; sel.appendChild(o); }
-            }
-        });
-    }).catch(()=>{});
-
-    // Add repos from config
-    const c=cfg();
-    if(c.repos){
-        c.repos.split(',').map(r=>r.trim()).filter(Boolean).forEach(r=>{
-            if(!added.has(r)){ added.add(r); const o=document.createElement('option'); o.value=r; o.textContent=r; sel.appendChild(o); }
-        });
-    }
-
-    // Add repos from GitHub API
-    api('/api/github/repos').then(d=>{
-        (d.repos||d||[]).forEach(repo=>{
-            const name=repo.full_name||repo.name||'';
-            if(name && !added.has(name)){ added.add(name); const o=document.createElement('option'); o.value=name; o.textContent=name; sel.appendChild(o); }
-        });
-    }).catch(()=>{});
-
-    if(currentRepo){ sel.value=currentRepo; }
-}
 
 // ── API ──
 async function api(path){
     const c=cfg();
     const url=new URL(path, c.apiUrl);
-    if(currentProjectId) url.searchParams.set('project_id',currentProjectId);
     const r=await fetch(url, {signal:AbortSignal.timeout(8000)});
     if(!r.ok) throw new Error(r.statusText);
     return r.json();
@@ -1365,13 +1332,7 @@ let ghRepos = [];
 async function fetchGitHub(){
     try{
         const repos = await api('/api/github/repos');
-        let allRepos = Array.isArray(repos) ? repos : [];
-
-        // Filter by selected repo if one is chosen
-        ghRepos = currentRepo
-            ? allRepos.filter(r => r.full_name === currentRepo)
-            : allRepos;
-
+        ghRepos = Array.isArray(repos) ? repos : [];
         $('ghRepoCount').textContent = ghRepos.length;
 
         let totalStars=0, totalOpenPrs=0, totalOpenIssues=0;
@@ -1382,7 +1343,7 @@ async function fetchGitHub(){
         // Repo cards
         if(ghRepos.length){
             $('ghRepoGrid').innerHTML = ghRepos.map(r=>`
-                <div class="repo-card${currentRepo===r.full_name?' selected':''}" onclick="loadRepoDetail('${r.full_name}')">
+                <div class="repo-card" onclick="loadRepoDetail('${r.full_name}')">
                     <h4>${r.name}</h4>
                     <div class="repo-desc">${r.description||'No description'}</div>
                     <div class="repo-stats">
@@ -1398,15 +1359,12 @@ async function fetchGitHub(){
             $('ghRepoGrid').innerHTML = '<div class="empty" style="padding:20px;text-align:center;">No repositories found. Add repos in Settings.</div>';
         }
 
-        // Load details for selected repo or first repo
-        const targetRepo = currentRepo || (ghRepos.length ? ghRepos[0].full_name : null);
-        if(targetRepo){
-            await Promise.all([
-                loadRepoPulls(targetRepo),
-                loadRepoIssues(targetRepo),
-                loadRepoCommits(targetRepo),
-                loadRepoContributors(targetRepo)
-            ]);
+        // Load PRs for first repo by default
+        if(ghRepos.length){
+            await loadRepoPulls(ghRepos[0].full_name);
+            await loadRepoIssues(ghRepos[0].full_name);
+            await loadRepoCommits(ghRepos[0].full_name);
+            await loadRepoContributors(ghRepos[0].full_name);
         }
     }catch(e){ console.warn('GitHub fetch:',e); }
 }
@@ -1812,7 +1770,6 @@ async function checkConnection(){
 // ── Init ──
 const c=cfg();
 $('cfgUrl').value=c.apiUrl; $('cfgRefresh').value=c.refreshInterval;
-loadRepoSelector();
 checkConnection().then(ok=>{ if(ok){ checkFirstStart(); fetchAll(); } });
 setInterval(()=>{ checkConnection().then(ok=>{ if(ok) fetchAll(); }); }, c.refreshInterval*1000);
 
