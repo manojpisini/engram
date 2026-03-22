@@ -1163,14 +1163,36 @@ function timeAgo(d){ if(!d) return ''; const s=Math.floor((Date.now()-new Date(d
 function langColor(l){ const m={JavaScript:'#f1e05a',TypeScript:'#3178c6',Python:'#3572a5',Rust:'#dea584',Go:'#00add8',Java:'#b07219',Ruby:'#701516',C:'#555','C++':'#f34b7d','C#':'#178600',Shell:'#89e051',HTML:'#e34c26',CSS:'#563d7c'}; return m[l]||'#555'; }
 
 // ── Repo management ──
+// currentRepo = repo display name (e.g. "owner/repo")
+// currentProjectId = Notion project page ID (used for Notion DB filters)
+// repoToProjectId = map repo name → Notion project ID
 let currentRepo = null;
-window.switchRepo = function(v){ currentRepo=v||null; fetchAll(); };
+let currentProjectId = null;
+let repoToProjectId = {};
+
+window.switchRepo = function(v){
+    currentRepo = v || null;
+    currentProjectId = v ? (repoToProjectId[v] || null) : null;
+    fetchAll();
+};
 
 function loadRepoSelector(){
     const sel=$('repoSelect');
-    // Clear existing options except "All Repositories"
     while(sel.options.length>1) sel.remove(1);
     const added=new Set();
+    repoToProjectId = {};
+
+    // Load Notion projects first to build the repo→projectId map
+    api('/api/projects').then(d=>{
+        pages(d).forEach(p=>{
+            const name=np(p,'Name');
+            const pid=p.id||'';
+            if(name){
+                repoToProjectId[name]=pid;
+                if(!added.has(name)){ added.add(name); const o=document.createElement('option'); o.value=name; o.textContent=name; sel.appendChild(o); }
+            }
+        });
+    }).catch(()=>{});
 
     // Add repos from config
     const c=cfg();
@@ -1188,23 +1210,14 @@ function loadRepoSelector(){
         });
     }).catch(()=>{});
 
-    // Add repos from Notion projects
-    api('/api/projects').then(d=>{
-        pages(d).forEach(p=>{
-            const name=np(p,'Name');
-            if(name && !added.has(name)){ added.add(name); const o=document.createElement('option'); o.value=name; o.textContent=name; sel.appendChild(o); }
-        });
-    }).catch(()=>{});
-
-    // Restore previous selection
-    if(currentRepo && added.has(currentRepo)){ sel.value=currentRepo; }
+    if(currentRepo){ sel.value=currentRepo; }
 }
 
 // ── API ──
 async function api(path){
     const c=cfg();
     const url=new URL(path, c.apiUrl);
-    if(currentRepo) url.searchParams.set('project_id',currentRepo);
+    if(currentProjectId) url.searchParams.set('project_id',currentProjectId);
     const r=await fetch(url, {signal:AbortSignal.timeout(8000)});
     if(!r.ok) throw new Error(r.statusText);
     return r.json();
@@ -1776,7 +1789,7 @@ window.runNotionSetup = async function(){
 async function fetchAll(){
     fetchHealth(); fetchEvents(); fetchRfcs(); fetchVulns();
     fetchReviews(); fetchModules(); fetchVault(); fetchReleases(); fetchBenchmarks();
-    fetchConnections(); fetchSettings(); fetchHomeNotionStats();
+    fetchGitHub(); fetchConnections(); fetchSettings(); fetchHomeNotionStats();
     checkSetupStatus();
 }
 
