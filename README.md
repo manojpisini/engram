@@ -2,10 +2,6 @@
   <img src="images/engram_banner.png" alt="ENGRAM Banner" width="100%">
 </p>
 
-<p align="center">
-  <img src="images/engram.png" alt="ENGRAM" width="200">
-</p>
-
 <h3 align="center">Engineering Intelligence, etched in Notion.</h3>
 
 <p align="center">
