@@ -1008,7 +1008,7 @@ async fn api_setup_status(
     .filter(|id| !id.is_empty())
     .count();
 
-    let notion_ready = !c.auth.notion_mcp_token.is_empty() && !c.workspace.notion_workspace_id.is_empty();
+    let notion_ready = !c.auth.notion_mcp_token.is_empty();
     let github_ready = !c.auth.github_token.is_empty();
     let ai_ready = !c.auth.anthropic_api_key.is_empty();
 
@@ -1030,16 +1030,16 @@ async fn api_setup_notion(
     info!("[API] Notion setup requested from dashboard");
 
     let c = cfg(&state);
-    if c.auth.notion_mcp_token.is_empty() || c.workspace.notion_workspace_id.is_empty() {
+    if c.auth.notion_mcp_token.is_empty() {
         return (StatusCode::BAD_REQUEST, Json(serde_json::json!({
-            "error": "Notion token and workspace ID must be configured first. Go to Settings."
+            "error": "Notion integration token must be configured first. Go to Settings."
         }))).into_response();
     }
 
     let n = notion(&state);
     let workspace_id = c.workspace.notion_workspace_id.clone();
 
-    // Step 1: Create all databases
+    // Step 1: Create all databases (auto-creates parent page at workspace root)
     let db_ids = match crate::setup::create_all_databases(&n, &workspace_id).await {
         Ok(ids) => ids,
         Err(e) => {
@@ -1086,12 +1086,17 @@ async fn api_setup_notion(
     });
     info!("[Setup] SetupComplete event dispatched — intelligence layers will auto-generate data");
 
+    // Get the ENGRAM page ID to return to the dashboard
+    let engram_page_id = crate::setup::get_engram_page_id(&n).await
+        .unwrap_or_default();
+
     Json(serde_json::json!({
         "status": "ok",
         "message": "Notion workspace initialized. Intelligence layers are generating data automatically.",
         "databases_created": 23,
         "relations_created": 18,
         "playbook_rules": 3,
+        "engram_page_id": engram_page_id,
     })).into_response()
 }
 

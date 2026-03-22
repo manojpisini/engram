@@ -13,20 +13,20 @@ use engram_types::config::DatabaseIds;
 pub type ProgressFn = Box<dyn Fn(usize, usize, &str) + Send + Sync>;
 
 /// Create all 23 ENGRAM databases in the Notion workspace.
-/// First creates (or finds) an ENGRAM parent page, then creates all databases under it.
-/// The `parent_id` can be either a workspace page ID or a specific page ID.
-/// Returns the populated DatabaseIds.
+/// Automatically creates (or reuses) a styled ENGRAM parent page at the workspace root,
+/// then creates all databases as children. No manual page ID required.
+/// Returns the populated DatabaseIds and the parent page ID.
 pub async fn create_all_databases(
     notion: &NotionMcpClient,
-    parent_id: &str,
+    _parent_id: &str,
 ) -> Result<DatabaseIds> {
     let mut db = DatabaseIds::default();
     let total = 23;
     let mut step = 0;
 
-    // Try to find an existing ENGRAM parent page, or create one
-    let engram_page_id = find_or_create_engram_page(notion, parent_id).await
-        .context("Failed to create ENGRAM parent page. Make sure your Notion token has access to the specified page/workspace, and that you've shared the parent page with the ENGRAM integration.")?;
+    // Auto-create or find the ENGRAM parent page at workspace root
+    let engram_page_id = find_or_create_engram_page(notion).await
+        .context("Failed to create ENGRAM parent page. Make sure your Notion integration token is valid and has full access to the workspace.")?;
     info!("[Setup] Using ENGRAM parent page: {}", engram_page_id);
 
     macro_rules! create_db {
@@ -504,11 +504,10 @@ fn extract_id(result: &serde_json::Value) -> String {
         .to_string()
 }
 
-/// Find an existing "ENGRAM" page in the workspace, or create one under the given parent.
-/// The parent_id can be a page ID that has been shared with the integration.
+/// Find an existing "ENGRAM" page in the workspace, or create one at the workspace root.
+/// No parent page ID needed — creates a top-level page automatically.
 async fn find_or_create_engram_page(
     notion: &NotionMcpClient,
-    parent_id: &str,
 ) -> Result<String> {
     // First, try to search for an existing ENGRAM page
     info!("[Setup] Searching for existing ENGRAM parent page...");
@@ -534,33 +533,176 @@ async fn find_or_create_engram_page(
         }
     }
 
-    // No existing page found — create one under the parent
-    info!("[Setup] Creating new ENGRAM parent page under {}...", parent_id);
+    // No existing page found — create one at workspace root with rich styling
+    info!("[Setup] Creating new ENGRAM parent page at workspace root...");
     let page_payload = json!({
-        "parent": { "page_id": parent_id },
+        "parent": { "type": "workspace", "workspace": true },
         "properties": {
             "title": {
                 "title": [{
-                    "text": { "content": "ENGRAM" }
+                    "text": { "content": "ENGRAM" },
+                    "annotations": { "bold": true }
                 }]
             }
         },
         "icon": { "type": "emoji", "emoji": "🧠" },
-        "children": [{
-            "object": "block",
-            "type": "callout",
-            "callout": {
-                "icon": { "type": "emoji", "emoji": "⚡" },
-                "rich_text": [{
-                    "type": "text",
-                    "text": { "content": "This page is managed by ENGRAM — Engineering Intelligence Platform. All databases below are auto-generated and updated by the ENGRAM agents." }
-                }]
+        "cover": {
+            "type": "external",
+            "external": { "url": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920&q=80" }
+        },
+        "children": [
+            {
+                "object": "block",
+                "type": "callout",
+                "callout": {
+                    "icon": { "type": "emoji", "emoji": "⚡" },
+                    "color": "yellow_background",
+                    "rich_text": [{
+                        "type": "text",
+                        "text": { "content": "This page is managed by ENGRAM — Engineering Intelligence Platform. All databases below are auto-created and continuously updated by 9 AI-powered analysis agents." },
+                        "annotations": { "color": "default" }
+                    }]
+                }
+            },
+            {
+                "object": "block",
+                "type": "divider",
+                "divider": {}
+            },
+            {
+                "object": "block",
+                "type": "heading_2",
+                "heading_2": {
+                    "rich_text": [{
+                        "type": "text",
+                        "text": { "content": "🧭 Intelligence Layers" },
+                        "annotations": { "color": "default" }
+                    }]
+                }
+            },
+            {
+                "object": "block",
+                "type": "column_list",
+                "column_list": {
+                    "children": [
+                        {
+                            "object": "block",
+                            "type": "column",
+                            "column": {
+                                "children": [
+                                    {
+                                        "object": "block",
+                                        "type": "bulleted_list_item",
+                                        "bulleted_list_item": {
+                                            "rich_text": [{ "type": "text", "text": { "content": "🧭 Decisions" }, "annotations": { "bold": true } }, { "type": "text", "text": { "content": " — RFCs, decision drift, stale proposals" } }]
+                                        }
+                                    },
+                                    {
+                                        "object": "block",
+                                        "type": "bulleted_list_item",
+                                        "bulleted_list_item": {
+                                            "rich_text": [{ "type": "text", "text": { "content": "📊 Pulse" }, "annotations": { "bold": true } }, { "type": "text", "text": { "content": " — Benchmarks, regressions, baselines" } }]
+                                        }
+                                    },
+                                    {
+                                        "object": "block",
+                                        "type": "bulleted_list_item",
+                                        "bulleted_list_item": {
+                                            "rich_text": [{ "type": "text", "text": { "content": "🛡️ Shield" }, "annotations": { "bold": true } }, { "type": "text", "text": { "content": " — Dependencies, CVE audits" } }]
+                                        }
+                                    },
+                                    {
+                                        "object": "block",
+                                        "type": "bulleted_list_item",
+                                        "bulleted_list_item": {
+                                            "rich_text": [{ "type": "text", "text": { "content": "🗺️ Atlas" }, "annotations": { "bold": true } }, { "type": "text", "text": { "content": " — Module maps, onboarding tracks" } }]
+                                        }
+                                    },
+                                    {
+                                        "object": "block",
+                                        "type": "bulleted_list_item",
+                                        "bulleted_list_item": {
+                                            "rich_text": [{ "type": "text", "text": { "content": "🔐 Vault" }, "annotations": { "bold": true } }, { "type": "text", "text": { "content": " — Env configs, secret rotation" } }]
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "object": "block",
+                            "type": "column",
+                            "column": {
+                                "children": [
+                                    {
+                                        "object": "block",
+                                        "type": "bulleted_list_item",
+                                        "bulleted_list_item": {
+                                            "rich_text": [{ "type": "text", "text": { "content": "📝 Review" }, "annotations": { "bold": true } }, { "type": "text", "text": { "content": " — PR patterns, tech debt tracking" } }]
+                                        }
+                                    },
+                                    {
+                                        "object": "block",
+                                        "type": "bulleted_list_item",
+                                        "bulleted_list_item": {
+                                            "rich_text": [{ "type": "text", "text": { "content": "❤️ Health" }, "annotations": { "bold": true } }, { "type": "text", "text": { "content": " — Repo health scores, digests" } }]
+                                        }
+                                    },
+                                    {
+                                        "object": "block",
+                                        "type": "bulleted_list_item",
+                                        "bulleted_list_item": {
+                                            "rich_text": [{ "type": "text", "text": { "content": "⏱️ Timeline" }, "annotations": { "bold": true } }, { "type": "text", "text": { "content": " — Milestones, velocity tracking" } }]
+                                        }
+                                    },
+                                    {
+                                        "object": "block",
+                                        "type": "bulleted_list_item",
+                                        "bulleted_list_item": {
+                                            "rich_text": [{ "type": "text", "text": { "content": "🚀 Release" }, "annotations": { "bold": true } }, { "type": "text", "text": { "content": " — Auto release notes, changelogs" } }]
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "object": "block",
+                "type": "divider",
+                "divider": {}
+            },
+            {
+                "object": "block",
+                "type": "heading_2",
+                "heading_2": {
+                    "rich_text": [{
+                        "type": "text",
+                        "text": { "content": "📚 Databases" }
+                    }]
+                }
+            },
+            {
+                "object": "block",
+                "type": "paragraph",
+                "paragraph": {
+                    "rich_text": [{
+                        "type": "text",
+                        "text": { "content": "All 23 databases are created below automatically. Each database is populated in real-time by the corresponding intelligence agent when GitHub webhook events arrive." },
+                        "annotations": { "color": "gray" }
+                    }]
+                }
+            },
+            {
+                "object": "block",
+                "type": "divider",
+                "divider": {}
             }
-        }]
+        ]
     });
 
     let result = notion.post_raw("/pages", &page_payload).await
-        .context("Failed to create ENGRAM parent page. Ensure the parent page ID is correct and shared with the ENGRAM integration.")?;
+        .context("Failed to create ENGRAM parent page at workspace root. Ensure the integration token is valid and has 'Insert content' capability enabled.")?;
 
     let page_id = extract_id(&result);
     if page_id == "unknown" || page_id.is_empty() {
@@ -569,4 +711,27 @@ async fn find_or_create_engram_page(
 
     info!("[Setup] Created ENGRAM parent page: {}", page_id);
     Ok(page_id)
+}
+
+/// Returns the ENGRAM parent page ID (for API responses).
+/// Searches for the existing page without creating one.
+pub async fn get_engram_page_id(notion: &NotionMcpClient) -> Option<String> {
+    if let Ok(search_result) = notion.search("ENGRAM", Some(json!({
+        "value": "page",
+        "property": "object"
+    }))).await {
+        if let Some(results) = search_result["results"].as_array() {
+            for page in results {
+                let title = page["properties"]["title"]["title"]
+                    .as_array()
+                    .and_then(|a| a.first())
+                    .and_then(|t| t["plain_text"].as_str())
+                    .unwrap_or("");
+                if title == "ENGRAM" && page["archived"].as_bool() != Some(true) {
+                    return page["id"].as_str().map(|s| s.to_string());
+                }
+            }
+        }
+    }
+    None
 }

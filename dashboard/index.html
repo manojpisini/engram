@@ -291,21 +291,8 @@
                         <div class="help-warn">&#9888; You must also share your Notion page with the integration: open any page &rarr; ••• &rarr; "Add connections" &rarr; select ENGRAM</div>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>Parent Page ID</label>
-                    <input id="fsWorkspaceId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" spellcheck="false">
-                    <div class="form-hint">The Notion page where ENGRAM will create all its databases</div>
-                    <div class="fs-help-toggle" onclick="toggleHelp(this)"><span class="arrow">&#9654;</span> How to get this</div>
-                    <div class="fs-help-box">
-                        <ol>
-                            <li>Open <a href="https://www.notion.so" target="_blank">Notion</a> and create a new page (or pick an existing one)</li>
-                            <li>Click <strong>&bull;&bull;&bull;</strong> (top right) &rarr; <strong>"Add connections"</strong> &rarr; select <strong>ENGRAM</strong></li>
-                            <li>Copy the page URL — it looks like: <code>notion.so/Your-Page-<strong>abc123def456</strong></code></li>
-                            <li>The <strong>last 32 characters</strong> (after the last dash) are the Page ID</li>
-                            <li>Format it as a UUID: <code>xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</code></li>
-                        </ol>
-                        <div class="help-warn">&#9888; You MUST share this page with the ENGRAM integration, otherwise database creation will fail.</div>
-                    </div>
+                <div style="margin-top:16px;padding:10px 14px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);border-radius:8px;">
+                    <div style="font-size:11px;color:var(--green);">&#10003; ENGRAM will automatically create a styled parent page in your workspace with all 23 databases nested inside. No page ID needed.</div>
                 </div>
             </div>
 
@@ -931,9 +918,9 @@
                 <span style="font-size:10px;color:var(--text3)">Create at notion.so/profile/integrations</span>
             </div>
             <div class="form-group">
-                <label>Notion Parent Page ID</label>
-                <input id="cfgWorkspaceId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
-                <span style="font-size:10px;color:var(--text3)">Page ID where ENGRAM databases are created — must be shared with the integration</span>
+                <label>Notion Parent Page ID (auto-populated)</label>
+                <input id="cfgWorkspaceId" placeholder="Auto-created during setup" readonly style="opacity:0.6;cursor:not-allowed;">
+                <span style="font-size:10px;color:var(--text3)">Automatically created at workspace root during setup — no manual entry needed</span>
             </div>
             <div class="form-group">
                 <label>Anthropic API Key</label>
@@ -1062,8 +1049,6 @@ window.submitFirstStart = async function(){
     const body={};
     const nt=$('fsNotionToken').value.trim();
     if(nt) body.notion_token=nt;
-    const wid=$('fsWorkspaceId').value.trim();
-    if(wid) body.workspace_id=wid;
     const gt=$('fsGithubToken').value.trim();
     if(gt) body.github_token=gt;
     const gr=$('fsGithubRepos').value.trim();
@@ -1077,8 +1062,8 @@ window.submitFirstStart = async function(){
     const ws=$('fsWebhookSecret').value.trim();
     if(ws) body.webhook_secret=ws;
 
-    if(!nt || !wid){
-        status.textContent='Notion token and Workspace ID are required to continue.';
+    if(!nt){
+        status.textContent='Notion integration token is required to continue.';
         status.style.color='var(--red)';
         return;
     }
@@ -1096,12 +1081,17 @@ window.submitFirstStart = async function(){
         const sr=await fetch(c.apiUrl+'/api/setup/notion',{method:'POST',signal:AbortSignal.timeout(120000)});
         const sj=await sr.json();
         if(sr.ok){
-            status.textContent='Setup complete! Launching dashboard...';
+            const pageId = sj.engram_page_id || '';
+            status.innerHTML='<span style="color:var(--green)">&#10003; Setup complete!</span> Created ENGRAM page with 23 databases.' +
+                (pageId ? '<br><span style="font-size:10px;color:var(--text3)">Page ID: <code>'+pageId+'</code></span>' : '') +
+                '<br>Launching dashboard...';
             status.style.color='var(--green)';
+            // Store the page ID in the settings field
+            if(pageId) $('cfgWorkspaceId').value = pageId;
             setTimeout(()=>{
                 $('firstStartOverlay').style.display='none';
                 fetchAll();
-            },1500);
+            },2500);
         } else {
             status.textContent='Tokens saved but DB init failed: '+(sj.error||'Unknown')+'. You can retry from the Setup Wizard on the Home tab.';
             status.style.color='var(--accent)';
