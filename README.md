@@ -8,8 +8,16 @@
   <a href="#quick-start">Quick Start</a> &middot;
   <a href="#how-it-works">How It Works</a> &middot;
   <a href="#intelligence-layers">Intelligence Layers</a> &middot;
+  <a href="#dashboard">Dashboard</a> &middot;
   <a href="#deployment">Deployment</a> &middot;
   <a href="SECURITY.md">Security</a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Built_with-Rust-orange?style=flat-square&logo=rust" alt="Rust">
+  <img src="https://img.shields.io/badge/AI-Claude_API-blueviolet?style=flat-square" alt="Claude">
+  <img src="https://img.shields.io/badge/Data-Notion_API-black?style=flat-square&logo=notion" alt="Notion">
+  <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="MIT">
 </p>
 
 ---
@@ -20,6 +28,17 @@ No polling. No manual data entry. GitHub webhooks push events to ENGRAM, 9 speci
 
 **Notion is the central nervous system.** Every metric, every decision, every piece of intelligence lives in 23 interconnected databases in your workspace.
 
+### Key Features
+
+- **Single binary** — dashboard, config template, and Windows icon all embedded via `rust-embed`. Just download and run.
+- **9 AI agents** — each specialized for a different engineering intelligence domain, powered by Claude.
+- **23 Notion databases** — auto-created with full schemas, cross-database relations, and rollup properties.
+- **AI interpretations** — every data panel shows expandable AI-generated analysis (triage, drift scoring, review drafts, impact assessments).
+- **JWT authentication** — secure login with argon2 password hashing and token-based sessions.
+- **Setup wizard** — configure Notion, GitHub, and Claude from the browser on first launch.
+- **Auto-extracting config** — `engram.toml` is generated from an embedded template on first run.
+- **Demo mode** — load realistic mock data for demos and videos without touching production.
+
 ---
 
 ## Architecture
@@ -27,12 +46,14 @@ No polling. No manual data entry. GitHub webhooks push events to ENGRAM, 9 speci
 ```
 GitHub ──webhook──> ENGRAM Core ──broadcast──> 9 AI Agents ──write──> Notion
                          |                         |
-                    axum HTTP                 Claude API ──write──> Notion
+                    axum HTTP                 Claude API
                          |
-                   Dashboard  <────read────  23 Databases  <────  Notion
+             Embedded Dashboard  <────read────  23 Databases
 ```
 
-**ENGRAM Core** is a Rust daemon built on [axum](https://github.com/tokio-rs/axum). It receives GitHub webhook events, runs cron schedules, and routes everything through a tokio broadcast channel to a swarm of 9 intelligence agents. Each agent analyzes events using Claude and writes structured data to its own set of Notion databases. The dashboard reads everything back from Notion via the ENGRAM API.
+**ENGRAM Core** is a Rust daemon built on [axum](https://github.com/tokio-rs/axum). It receives GitHub webhook events, runs cron schedules, and routes everything through a tokio broadcast channel to a swarm of 9 intelligence agents. Each agent analyzes events using Claude and writes structured data to its own set of Notion databases. The embedded dashboard reads everything back from Notion via the ENGRAM API.
+
+The dashboard is compiled into the binary at build time using [`rust-embed`](https://github.com/pyrossh/rust-embed) — no external files needed. The binary serves the dashboard directly from memory with proper MIME types and SPA routing.
 
 ---
 
@@ -46,20 +67,21 @@ GitHub ──webhook──> ENGRAM Core ──broadcast──> 9 AI Agents ─�
 3. ENGRAM Core broadcasts each event to all 9 agents via tokio channels
 4. Each agent picks up relevant events and analyzes them using Claude AI
 5. Agents write structured intelligence to their respective Notion databases
-6. The dashboard reads from Notion (via ENGRAM API) and displays everything
-7. Agents cross-reference each other — Timeline correlates events,
+6. AI analysis is fetched once per event — stored in Notion, not re-generated on each view
+7. The embedded dashboard reads from Notion (via ENGRAM API) and displays everything
+8. Agents cross-reference each other — Timeline correlates events,
    Health synthesizes scores, Decisions auto-generates RFCs for regressions
 ```
 
 ### Setup Workflow
 
 ```
-Run ENGRAM
+Run ENGRAM (single binary)
     └──> Dashboard opens at http://localhost:3000
          └──> First-Start Setup Wizard appears
               │
               ├── 1. Notion Setup
-              │      Enter integration token + workspace ID
+              │      Enter integration token + parent page ID
               │      └──> Creates 23 Notion databases with schemas, relations, and seed data
               │
               ├── 2. GitHub Setup
@@ -90,25 +112,25 @@ Run ENGRAM
               └──> Dashboard displays all data dynamically from Notion
 ```
 
-No `.env` file needed. All configuration is done from the dashboard and persisted to `engram.toml`. Environment variables are supported as an optional override for server deployments.
+No `.env` file needed. All configuration is done from the dashboard and persisted to `engram.toml`. The config file is auto-generated from an embedded template on first run. Environment variables are supported as an optional override for server deployments.
 
 ---
 
 ## Intelligence Layers
 
-ENGRAM runs **9 specialized AI agents**, each responsible for a distinct intelligence domain. Every agent listens for relevant events, analyzes them with Claude, and writes structured results to Notion.
+ENGRAM runs **9 specialized AI agents**, each responsible for a distinct intelligence domain. Every agent listens for relevant events, analyzes them with Claude, and writes structured results to Notion. AI analysis is performed **once per event** and stored — the dashboard reads cached intelligence from Notion, not from Claude on every page load.
 
-| # | Layer | Agent | What It Does |
-|---|-------|-------|-------------|
-| 1 | **Decisions** | `engram-decisions` | RFC lifecycle management, drift scoring between code and architecture decisions, auto-RFC generation when critical regressions are detected |
-| 2 | **Pulse** | `engram-pulse` | CI benchmark ingestion, regression detection, performance baseline tracking across commits and branches |
-| 3 | **Shield** | `engram-shield` | Security audit parsing (cargo-audit, npm-audit, pip-audit, osv-scanner), CVE deduplication, vulnerability triage and severity scoring |
-| 4 | **Atlas** | `engram-atlas` | Module documentation, knowledge gap detection, onboarding track generation for new maintainers of each tracked repository |
-| 5 | **Vault** | `engram-vault` | Environment config diffing across branches, secret rotation tracking, config mismatch alerts |
-| 6 | **Review** | `engram-review` | PR analysis, review pattern extraction, tech debt tracking, playbook-driven automated code review |
-| 7 | **Health** | `engram-health` | Engineering health scoring, weekly digest generation, cross-layer synthesis combining metrics from all other agents |
-| 8 | **Timeline** | `engram-timeline` | Event correlation across all agents, cross-agent timeline, immutable audit trail for every change |
-| 9 | **Release** | `engram-release` | Release note generation, milestone tracking, changelog automation from merged PRs and commits |
+| # | Layer | Agent | What It Does | AI Interpretation |
+|---|-------|-------|-------------|-------------------|
+| 1 | **Decisions** | `engram-decisions` | RFC lifecycle management, drift scoring between code and architecture decisions, auto-RFC generation when critical regressions are detected | Decision Rationale, Drift Score, Drift Notes |
+| 2 | **Pulse** | `engram-pulse` | CI benchmark ingestion, regression detection, performance baseline tracking across commits and branches | AI Impact, AI Recommendation |
+| 3 | **Shield** | `engram-shield` | Security audit parsing (cargo-audit, npm-audit, pip-audit, osv-scanner), CVE deduplication, vulnerability triage and severity scoring | AI Triage per CVE |
+| 4 | **Atlas** | `engram-atlas` | Module documentation, knowledge gap detection, onboarding track generation for new maintainers of each tracked repository | AI Summary, Key Files |
+| 5 | **Vault** | `engram-vault` | Environment config diffing across branches, secret rotation tracking, config mismatch alerts | AI Classification, Sensitivity |
+| 6 | **Review** | `engram-review` | PR analysis, review pattern extraction, tech debt tracking, playbook-driven automated code review | Quality Score, Review Draft |
+| 7 | **Health** | `engram-health` | Engineering health scoring, weekly digest generation, cross-layer synthesis combining metrics from all other agents | AI Narrative, Key Risks, Key Wins |
+| 8 | **Timeline** | `engram-timeline` | Event correlation across all agents, cross-agent timeline, immutable audit trail for every change | — |
+| 9 | **Release** | `engram-release` | Release note generation, milestone tracking, changelog automation from merged PRs and commits | AI Readiness, Release Notes, Migration Notes |
 
 ### 23 Notion Databases
 
@@ -141,26 +163,90 @@ Each tracked repository gets its own onboarding track in Notion — not a generi
 
 ---
 
+## Dashboard
+
+The dashboard is a single-page application embedded directly into the ENGRAM binary. It provides real-time visibility into all 9 intelligence layers with interactive charts, tables, and AI-generated interpretations.
+
+### Panels
+
+| Panel | Content |
+|-------|---------|
+| **Home** | Overall health score, recent activity, quick stats |
+| **GitHub** | PRs, issues, commits, contributors from tracked repos |
+| **Health** | Engineering health scores with radar chart, trend line, key risks/wins |
+| **Timeline** | Cross-agent event correlation with layer breakdown |
+| **Decisions** | RFC lifecycle with drift scoring and AI rationale (expandable) |
+| **Pulse** | Benchmark tracking with regression detection and AI impact (expandable) |
+| **Shield** | CVE dashboard with severity/triage charts and AI triage (expandable) |
+| **Atlas** | Module coverage with AI summaries and key files (expandable) |
+| **Onboarding** | Auto-generated onboarding tracks, steps, and knowledge gaps |
+| **Vault** | Env config tracking with AI classification and sensitivity (expandable) |
+| **Review** | PR reviews with quality scores and AI review drafts (expandable) |
+| **Releases** | Release tracking with AI readiness and migration notes (expandable) |
+| **Docs** | Technical debt tracking |
+| **Settings** | Connection status, configuration, setup wizard |
+| **About** | License, author info, architecture overview |
+
+### AI Interpretations
+
+Every intelligence table supports **click-to-expand** detail rows showing AI-generated analysis:
+
+- **Decisions**: Decision Rationale, Drift Score with severity tag, Drift Notes
+- **Shield**: AI Triage recommendation per CVE with risk context
+- **Review**: Quality Score (0-100) and AI Review Draft
+- **Atlas**: Full AI Summary, Key Files as code references
+- **Vault**: Sensitivity level, AI Classification of variable purpose/risk
+- **Releases**: AI Readiness assessment, Release Notes, Migration Notes
+- **Pulse**: AI Impact analysis, AI Recommendation for regressions
+- **Health**: Key Risks and Key Wins lists below the narrative
+
+### Demo Mode
+
+For demos and videos, load `demo.js` externally to populate the dashboard with realistic mock data:
+
+```bash
+# Serve dashboard with demo data (development only)
+python -m http.server 8080 --directory dashboard
+# Then visit http://localhost:8080?demo
+```
+
+Demo data is **excluded from the production binary** via `#[exclude = "demo.js"]` in the rust-embed configuration. It never ships with releases.
+
+---
+
 ## Quick Start
 
 ### Prerequisites
 
-- **Rust toolchain** (1.75+)
 - **Notion workspace** with an [internal integration](https://www.notion.so/profile/integrations) (full access)
 - **GitHub Personal Access Token** — [create one here](https://github.com/settings/tokens) (scopes: `repo`, `read:org`)
 - **Anthropic API key** — [get one here](https://console.anthropic.com/settings/keys)
 
-### Install & Run
+### Download
+
+Download the latest release for your platform from [GitHub Releases](https://github.com/manojpisini/engram/releases):
+
+| Platform | Archive |
+|----------|---------|
+| Windows x86_64 | `engram-*-x86_64-pc-windows-msvc.zip` |
+| Linux x86_64 | `engram-*-x86_64-unknown-linux-gnu.tar.gz` |
+| Linux ARM64 | `engram-*-aarch64-unknown-linux-gnu.tar.gz` |
+| macOS Intel | `engram-*-x86_64-apple-darwin.tar.gz` |
+| macOS Apple Silicon | `engram-*-aarch64-apple-darwin.tar.gz` |
+
+Extract and run — the dashboard is embedded in the binary and `engram.toml` is auto-generated on first launch.
+
+### Build from Source
 
 ```bash
 # Clone
 git clone https://github.com/manojpisini/engram.git
 cd engram
 
-# Build
+# Build (Rust 1.75+ required)
 cargo build --release --bin engram
 
-# Run — opens dashboard at http://localhost:3000
+# Run — dashboard opens at http://localhost:3000
 ./target/release/engram
 ```
 
@@ -222,7 +308,7 @@ Posts PR open/update/merge events with diff stats (additions, deletions, files c
 
 ## Configuration
 
-All configuration is done from the dashboard. Settings are persisted to `engram.toml`:
+All configuration is done from the dashboard. Settings are persisted to `engram.toml`, which is auto-generated from an embedded template on first run:
 
 ```toml
 [workspace]
@@ -316,7 +402,9 @@ powershell -ExecutionPolicy Bypass -File packaging\windows\install.ps1
 engram/
 ├── crates/
 │   ├── engram-core/          Main daemon: axum HTTP, webhook listener,
-│   │                         scheduler, event router, dashboard API
+│   │   ├── src/main.rs       scheduler, event router, auto-config extraction
+│   │   ├── src/webhook.rs    embedded dashboard serving, API routes
+│   │   └── build.rs          Windows executable icon embedding
 │   ├── engram-types/         Shared types: config, events, Notion schemas
 │   ├── engram-decisions/     Layer 1 — RFC lifecycle, drift scoring
 │   ├── engram-pulse/         Layer 2 — Benchmark tracking, regression detection
@@ -327,8 +415,15 @@ engram/
 │   ├── engram-health/        Layer 7 — Health scoring, weekly digest
 │   ├── engram-timeline/      Layer 8 — Event correlation, audit trail
 │   └── engram-release/       Layer 9 — Release notes, changelog
-├── dashboard/                Single-page dashboard (vanilla HTML/JS/CSS)
-├── .github/workflows/        GitHub Actions workflows (release, audit, benchmark, notify)
+├── dashboard/
+│   ├── index.html            Single-page dashboard (embedded in binary at build time)
+│   └── demo.js               Demo mock data (excluded from binary, dev-only)
+├── images/
+│   ├── engram_banner.png     README banner
+│   ├── engram_logo.png       Logo source
+│   └── engram.ico            Windows executable icon (multi-size)
+├── .github/workflows/
+│   ├── release.yml           Cross-platform release builds
 │   ├── audit.yml             Security audit → Shield agent
 │   ├── benchmark.yml         Benchmarks → Pulse agent
 │   └── engram-notify.yml     PR events → Review, Decisions, Timeline agents
@@ -341,7 +436,7 @@ engram/
 │   ├── darwin/               macOS installer
 │   ├── windows/              Windows service installer
 │   └── build-all.sh          Cross-platform build script
-├── engram.toml               Runtime configuration (auto-populated from dashboard)
+├── engram.toml.example       Config template (embedded in binary, auto-extracted on first run)
 ├── SECURITY.md               Security policy and architecture
 └── LICENSE                   MIT
 ```
@@ -354,13 +449,19 @@ engram/
 |-----------|------|
 | **Rust** | Core daemon, all 9 intelligence agents, type system |
 | **Notion API** | Central data store — 23 databases with cross-references and relations |
-| **Claude API** | Intelligence analysis — code review, summarization, RFC generation, onboarding docs |
+| **Claude API** | Intelligence analysis — code review, summarization, RFC generation, triage, onboarding docs |
 | **GitHub API** | Repository metadata, PR diffs, contributor info |
-| **axum** | HTTP server, webhook listener, dashboard API |
+| **axum** | HTTP server, webhook listener, embedded dashboard serving |
 | **tokio** | Async runtime, broadcast channels for agent communication |
-| **Vanilla JS** | Dashboard — zero dependencies, single HTML file |
+| **rust-embed** | Compile-time embedding of dashboard and config template into the binary |
+| **Vanilla JS** | Dashboard — zero dependencies, single HTML file, Chart.js for visualizations |
+| **argon2 + JWT** | Authentication — secure password hashing and token-based sessions |
 
 ---
+
+## Author
+
+**Manoj Pisini** — [GitHub](https://github.com/manojpisini)
 
 ## License
 

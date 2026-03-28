@@ -44,3 +44,6 @@ jsonwebtoken = { workspace = true }
 rand = { workspace = true }
 rust-embed = { workspace = true }
 mime_guess = { workspace = true }
+
+[build-dependencies]
+winresource = "0.1"
