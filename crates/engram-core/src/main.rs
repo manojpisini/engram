@@ -2,6 +2,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
 use anyhow::Result;
+use rust_embed::Embed;
 use tracing::{info, error};
 
 mod config;
@@ -42,13 +43,31 @@ async fn main() -> Result<()> {
         )
         .init();
 
-    info!("🔨 ENGRAM — Engineering Intelligence, etched in Notion");
+    info!("ENGRAM — Engineering Intelligence, etched in Notion");
     info!("Starting ENGRAM core daemon...");
 
-    // Load configuration
+    // Determine config path
     let config_path = std::env::var("ENGRAM_CONFIG")
         .map(PathBuf::from)
         .unwrap_or_else(|_| PathBuf::from("engram.toml"));
+
+    // Extract default config from embedded template if it doesn't exist
+    if !config_path.exists() {
+        info!("No config file found at {} — extracting default template", config_path.display());
+        #[derive(Embed)]
+        #[folder = "../../"]
+        #[include = "engram.toml.example"]
+        struct CfgTemplate;
+
+        if let Some(tpl) = CfgTemplate::get("engram.toml.example") {
+            if let Err(e) = std::fs::write(&config_path, tpl.data.as_ref()) {
+                error!("Failed to write default config: {e}");
+            } else {
+                info!("Default config extracted to {}", config_path.display());
+            }
+        }
+    }
+
     let config = load_config(&config_path)?;
 
     // Initialize shared clients

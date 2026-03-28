@@ -27,7 +27,7 @@ tokio = { version = "1", features = ["full"] }
 # Web framework
 axum = { version = "0.7", features = ["json", "macros"] }
 tower = "0.4"
-tower-http = { version = "0.5", features = ["cors", "trace", "fs"] }
+tower-http = { version = "0.5", features = ["cors", "trace"] }
 
 # HTTP client
 reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
@@ -69,6 +69,10 @@ dotenvy = "0.15"
 argon2 = "0.5"
 jsonwebtoken = "9"
 rand = "0.8"
+
+# Embedded assets
+rust-embed = { version = "8", features = ["mime-guess", "include-exclude"] }
+mime_guess = "2"
 
 # Shared types
 engram-types = { path = "crates/engram-types" }

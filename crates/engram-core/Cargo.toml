@@ -42,3 +42,5 @@ dotenvy = { workspace = true }
 argon2 = { workspace = true }
 jsonwebtoken = { workspace = true }
 rand = { workspace = true }
+rust-embed = { workspace = true }
+mime_guess = { workspace = true }

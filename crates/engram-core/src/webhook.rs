@@ -13,8 +13,10 @@ use axum::{
 use hmac::{Hmac, Mac};
 use serde::Deserialize;
 use sha2::Sha256;
+use axum::http::{header, Uri};
+use axum::response::Response;
+use rust_embed::Embed;
 use tower_http::cors::CorsLayer;
-use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 use tracing::{error, info, warn};
 
@@ -35,13 +37,48 @@ use crate::notion_client::NotionMcpClient;
 
 type HmacSha256 = Hmac<Sha256>;
 
+/// Embedded dashboard assets — compiled into the binary at build time.
+/// The dashboard HTML cannot be altered at runtime; config is changed only via API.
+#[derive(Embed)]
+#[folder = "../../dashboard/"]
+#[exclude = "demo.js"]
+struct DashboardAssets;
+
+/// Serve embedded dashboard files (fallback handler for non-API routes)
+async fn embedded_dashboard(uri: Uri) -> impl IntoResponse {
+    let path = uri.path().trim_start_matches('/');
+    // Default to index.html for root or unknown paths (SPA routing)
+    let path = if path.is_empty() || !path.contains('.') { "index.html" } else { path };
+
+    match DashboardAssets::get(path) {
+        Some(content) => {
+            let mime = mime_guess::from_path(path).first_or_octet_stream();
+            Response::builder()
+                .status(StatusCode::OK)
+                .header(header::CONTENT_TYPE, mime.as_ref())
+                .header(header::CACHE_CONTROL, "public, max-age=3600")
+                .body(axum::body::Body::from(content.data.to_vec()))
+                .unwrap()
+        }
+        None => {
+            // Fall back to index.html for SPA client-side routing
+            match DashboardAssets::get("index.html") {
+                Some(content) => Response::builder()
+                    .status(StatusCode::OK)
+                    .header(header::CONTENT_TYPE, "text/html")
+                    .body(axum::body::Body::from(content.data.to_vec()))
+                    .unwrap(),
+                None => Response::builder()
+                    .status(StatusCode::NOT_FOUND)
+                    .body(axum::body::Body::from("Not found"))
+                    .unwrap(),
+            }
+        }
+    }
+}
+
 /// Start the axum webhook listener
 pub async fn serve(state: Arc<AppState>, addr: &str) -> Result<()> {
-    // Resolve the dashboard directory relative to the current working directory
-    let dashboard_path = std::env::current_dir()
-        .unwrap_or_default()
-        .join("dashboard");
-
     // ── Public routes (no auth required) ──
     let public_routes = Router::new()
         .route("/health", get(health_check))
@@ -97,12 +134,12 @@ pub async fn serve(state: Arc<AppState>, addr: &str) -> Result<()> {
     let app = Router::new()
         .merge(public_routes)
         .merge(protected_routes)
-        .fallback_service(ServeDir::new(&dashboard_path))
+        .fallback(embedded_dashboard)
         .layer(CorsLayer::permissive())
         .layer(TraceLayer::new_for_http())
         .with_state(state);
 
-    info!("Serving dashboard from {}", dashboard_path.display());
+    info!("Serving embedded dashboard (compiled into binary)");
 
     // Try to bind; if port is in use, attempt to kill the old process (Windows)
     let listener = match tokio::net::TcpListener::bind(addr).await {
