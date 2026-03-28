@@ -19,6 +19,7 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/manojpisini/engram"
+description = "Engineering Intelligence Platform — 9 AI agents that analyze your codebase and write structured intelligence to Notion"
 
 [workspace.dependencies]
 # Async runtime
@@ -75,13 +76,13 @@ rust-embed = { version = "8", features = ["mime-guess", "include-exclude"] }
 mime_guess = "2"
 
 # Shared types
-engram-types = { path = "crates/engram-types" }
-engram-decisions = { path = "crates/engram-decisions" }
-engram-pulse = { path = "crates/engram-pulse" }
-engram-shield = { path = "crates/engram-shield" }
-engram-atlas = { path = "crates/engram-atlas" }
-engram-vault = { path = "crates/engram-vault" }
-engram-review = { path = "crates/engram-review" }
-engram-health = { path = "crates/engram-health" }
-engram-timeline = { path = "crates/engram-timeline" }
-engram-release = { path = "crates/engram-release" }
+engram-types = { version = "0.1.0", path = "crates/engram-types" }
+engram-decisions = { version = "0.1.0", path = "crates/engram-decisions" }
+engram-pulse = { version = "0.1.0", path = "crates/engram-pulse" }
+engram-shield = { version = "0.1.0", path = "crates/engram-shield" }
+engram-atlas = { version = "0.1.0", path = "crates/engram-atlas" }
+engram-vault = { version = "0.1.0", path = "crates/engram-vault" }
+engram-review = { version = "0.1.0", path = "crates/engram-review" }
+engram-health = { version = "0.1.0", path = "crates/engram-health" }
+engram-timeline = { version = "0.1.0", path = "crates/engram-timeline" }
+engram-release = { version = "0.1.0", path = "crates/engram-release" }

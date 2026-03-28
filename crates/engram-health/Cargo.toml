@@ -2,6 +2,9 @@
 name = "engram-health"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Engineering health scoring and weekly digest agent for ENGRAM"
 
 [dependencies]
 engram-types = { workspace = true }

@@ -2,6 +2,9 @@
 name = "engram-atlas"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Module documentation, onboarding, and knowledge gap detection agent for ENGRAM"
 
 [dependencies]
 engram-types = { workspace = true }

@@ -2,6 +2,9 @@
 name = "engram-core"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "ENGRAM core daemon — webhook listener, AI agent router, and embedded dashboard"
 
 [[bin]]
 name = "engram"

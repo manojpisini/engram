@@ -2,6 +2,9 @@
 name = "engram-review"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "PR analysis, tech debt tracking, and automated code review agent for ENGRAM"
 
 [dependencies]
 engram-types = { workspace = true }
