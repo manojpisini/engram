@@ -27,25 +27,20 @@ jobs:
         include:
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
-            artifact: engram-linux-x86_64
-            ext: ""
+            archive: tar.gz
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
-            artifact: engram-linux-arm64
-            ext: ""
+            archive: tar.gz
             cross: true
           - target: x86_64-apple-darwin
             os: macos-latest
-            artifact: engram-macos-intel
-            ext: ""
+            archive: tar.gz
           - target: aarch64-apple-darwin
             os: macos-latest
-            artifact: engram-macos-apple-silicon
-            ext: ""
+            archive: tar.gz
           - target: x86_64-pc-windows-msvc
             os: windows-latest
-            artifact: engram-windows-x86_64.exe
-            ext: ".exe"
+            archive: zip
 
     steps:
       - uses: actions/checkout@v4
@@ -77,16 +72,53 @@ jobs:
           fi
         shell: bash
 
-      - name: Rename binary
+      - name: Determine paths
+        id: paths
         shell: bash
         run: |
-          cp "target/${{ matrix.target }}/release/engram${{ matrix.ext }}" "${{ matrix.artifact }}"
+          VERSION="${{ github.ref_name }}"
+          if [ -z "$VERSION" ] || [ "$VERSION" = "main" ]; then
+            VERSION="${{ github.event.inputs.tag }}"
+          fi
+          VERSION="${VERSION#v}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+          ARCHIVE_NAME="engram-${VERSION}-${{ matrix.target }}"
+          echo "archive_name=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
+
+      - name: Package (Unix)
+        if: matrix.archive == 'tar.gz'
+        shell: bash
+        run: |
+          STAGING="${{ steps.paths.outputs.archive_name }}"
+          mkdir -p "$STAGING"
+          cp "target/${{ matrix.target }}/release/engram" "$STAGING/"
+          cp engram.toml.example "$STAGING/engram.toml"
+          cp README.md "$STAGING/"
+          cp LICENSE "$STAGING/"
+          cp -r dashboard "$STAGING/"
+          tar czf "${{ steps.paths.outputs.archive_name }}.tar.gz" "$STAGING"
+
+      - name: Package (Windows)
+        if: matrix.archive == 'zip'
+        shell: bash
+        run: |
+          STAGING="${{ steps.paths.outputs.archive_name }}"
+          mkdir -p "$STAGING"
+          cp "target/${{ matrix.target }}/release/engram.exe" "$STAGING/"
+          cp engram.toml.example "$STAGING/engram.toml"
+          cp README.md "$STAGING/"
+          cp LICENSE "$STAGING/"
+          cp -r dashboard "$STAGING/"
+          cd "$STAGING" && 7z a -tzip "../${{ steps.paths.outputs.archive_name }}.zip" . && cd ..
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact }}
-          path: ${{ matrix.artifact }}
+          name: ${{ steps.paths.outputs.archive_name }}
+          path: |
+            *.tar.gz
+            *.zip
 
   # Build .deb package
   deb:
@@ -125,7 +157,7 @@ jobs:
       - name: Collect release files
         run: |
           mkdir -p release
-          find artifacts -type f \( -name "engram-*" -o -name "*.deb" \) -exec cp {} release/ \;
+          find artifacts -type f \( -name "*.tar.gz" -o -name "*.zip" -o -name "*.deb" \) -exec cp {} release/ \;
           ls -la release/
 
       - name: Generate checksums
@@ -156,11 +188,18 @@ jobs:
 
             ### Installation
 
-            Download the executable for your platform and run:
+            Download the archive for your platform, extract, and run:
 
             ```bash
-            chmod +x engram-*        # Make executable (Linux/macOS)
-            ./engram-linux-x86_64    # Opens dashboard at http://localhost:3000
+            tar xzf engram-*.tar.gz    # Linux/macOS
+            cd engram-*/
+            ./engram                    # Opens dashboard at http://localhost:3000
+            ```
+
+            Windows:
+            ```
+            # Extract the .zip, then run:
+            engram.exe
             ```
 
             The setup wizard guides you through connecting Notion, GitHub, and Claude on first launch.
@@ -169,12 +208,14 @@ jobs:
 
             | File | Platform |
             |------|----------|
-            | `engram-linux-x86_64` | Linux x86_64 |
-            | `engram-linux-arm64` | Linux ARM64 |
-            | `engram-macos-intel` | macOS Intel |
-            | `engram-macos-apple-silicon` | macOS Apple Silicon |
-            | `engram-windows-x86_64.exe` | Windows x86_64 |
+            | `engram-*-x86_64-unknown-linux-gnu.tar.gz` | Linux x86_64 |
+            | `engram-*-aarch64-unknown-linux-gnu.tar.gz` | Linux ARM64 |
+            | `engram-*-x86_64-apple-darwin.tar.gz` | macOS Intel |
+            | `engram-*-aarch64-apple-darwin.tar.gz` | macOS Apple Silicon |
+            | `engram-*-x86_64-pc-windows-msvc.zip` | Windows x86_64 |
             | `engram_*_amd64.deb` | Debian/Ubuntu |
+
+            Each archive contains: `engram` executable, `engram.toml` config template, `dashboard/` web UI, README, and LICENSE.
 
             ### Verify
 
