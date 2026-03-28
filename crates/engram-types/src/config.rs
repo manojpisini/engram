@@ -37,8 +37,9 @@ pub struct UserProfile {
     pub jwt_secret: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct WorkspaceConfig {
+    #[serde(default)]
     pub notion_workspace_id: String,
     #[serde(default)]
     pub parent_page_id: String,
@@ -98,28 +99,51 @@ pub struct GitHubConfig {
 /// Notion database IDs — populated by the dashboard setup wizard
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct DatabaseIds {
+    #[serde(default)]
     pub projects: String,
+    #[serde(default)]
     pub rfcs: String,
+    #[serde(default)]
     pub rfc_comments: String,
+    #[serde(default)]
     pub benchmarks: String,
+    #[serde(default)]
     pub regressions: String,
+    #[serde(default)]
     pub performance_baselines: String,
+    #[serde(default)]
     pub dependencies: String,
+    #[serde(default)]
     pub audit_runs: String,
+    #[serde(default)]
     pub modules: String,
+    #[serde(default)]
     pub onboarding_tracks: String,
+    #[serde(default)]
     pub onboarding_steps: String,
+    #[serde(default)]
     pub knowledge_gaps: String,
+    #[serde(default)]
     pub env_config: String,
+    #[serde(default)]
     pub config_snapshots: String,
+    #[serde(default)]
     pub secret_rotation_log: String,
+    #[serde(default)]
     pub pr_reviews: String,
+    #[serde(default)]
     pub review_playbook: String,
+    #[serde(default)]
     pub review_patterns: String,
+    #[serde(default)]
     pub tech_debt: String,
+    #[serde(default)]
     pub health_reports: String,
+    #[serde(default)]
     pub engineering_digest: String,
+    #[serde(default)]
     pub events: String,
+    #[serde(default)]
     pub releases: String,
 }
 
