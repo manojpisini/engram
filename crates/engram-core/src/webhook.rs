@@ -5,6 +5,7 @@ use axum::{
     Router,
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
+    middleware::{self, Next},
     response::IntoResponse,
     routing::{get, post},
     Json,
@@ -16,6 +17,16 @@ use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 use tracing::{error, info, warn};
+
+use argon2::{
+    Argon2,
+    PasswordHash,
+    PasswordHasher,
+    PasswordVerifier,
+    password_hash::SaltString,
+};
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use rand::rngs::OsRng;
 
 use engram_types::events::{AuditTool, EngramEvent};
 
@@ -31,11 +42,24 @@ pub async fn serve(state: Arc<AppState>, addr: &str) -> Result<()> {
         .unwrap_or_default()
         .join("dashboard");
 
-    let app = Router::new()
+    // ── Public routes (no auth required) ──
+    let public_routes = Router::new()
         .route("/health", get(health_check))
+        .route("/api/auth/login", post(auth_login))
+        .route("/api/auth/register", post(auth_register))
+        .route("/api/auth/status", get(auth_status))
+        .route("/api/setup/status", get(api_setup_status))
+        // Webhooks are authenticated via HMAC signature, not JWT
         .route("/webhook/github", post(github_webhook))
         .route("/webhook/benchmark", post(benchmark_webhook))
-        .route("/webhook/audit", post(audit_webhook))
+        .route("/webhook/audit", post(audit_webhook));
+
+    // ── Protected routes (JWT auth required) ──
+    let protected_routes = Router::new()
+        .route("/api/auth/me", get(auth_me))
+        .route("/api/auth/change-password", post(auth_change_password))
+        .route("/api/auth/update-profile", post(auth_update_profile))
+        .route("/api/auth/sessions", get(auth_sessions))
         .route("/api/trigger/digest", post(trigger_digest))
         .route("/api/trigger/onboard", post(trigger_onboard))
         .route("/api/trigger/release", post(trigger_release))
@@ -60,12 +84,19 @@ pub async fn serve(state: Arc<AppState>, addr: &str) -> Result<()> {
         .route("/api/notion/search", get(api_notion_search))
         .route("/api/notion/database/:db_id", get(api_notion_database_schema))
         .route("/api/dashboard/tech-debt", get(api_dashboard_tech_debt))
+        .route("/api/dashboard/onboarding-tracks", get(api_dashboard_onboarding_tracks))
+        .route("/api/dashboard/onboarding-steps", get(api_dashboard_onboarding_steps))
+        .route("/api/dashboard/knowledge-gaps", get(api_dashboard_knowledge_gaps))
         .route("/api/dashboard/digest", get(api_dashboard_digest))
         .route("/api/config", get(api_get_config))
         .route("/api/config/update", post(api_update_config))
         .route("/api/setup/notion", post(api_setup_notion))
-        .route("/api/setup/status", get(api_setup_status))
         .route("/api/intelligence/generate", post(api_intelligence_generate))
+        .layer(middleware::from_fn_with_state(state.clone(), auth_middleware));
+
+    let app = Router::new()
+        .merge(public_routes)
+        .merge(protected_routes)
         .fallback_service(ServeDir::new(&dashboard_path))
         .layer(CorsLayer::permissive())
         .layer(TraceLayer::new_for_http())
@@ -138,6 +169,533 @@ async fn health_check() -> impl IntoResponse {
         "service": "engram-core",
         "version": env!("CARGO_PKG_VERSION"),
     }))
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Authentication — JWT-based login, profile, password change
+// ═══════════════════════════════════════════════════════════════
+
+#[derive(Debug, Clone, serde::Serialize, Deserialize)]
+struct JwtClaims {
+    sub: String,       // username
+    exp: usize,        // expiry (unix timestamp)
+    iat: usize,        // issued at
+    sid: String,       // session id (for revocation)
+}
+
+fn jwt_secret(state: &AppState) -> String {
+    let s = state.config.read().unwrap().user.jwt_secret.clone();
+    if s.is_empty() { "engram-default-secret-change-me".to_string() } else { s }
+}
+
+fn generate_jwt_secret() -> String {
+    use rand::Rng;
+    let mut rng = OsRng;
+    (0..64).map(|_| format!("{:02x}", rng.gen::<u8>())).collect()
+}
+
+fn hash_password(password: &str) -> Result<String> {
+    let salt = SaltString::generate(&mut OsRng);
+    let argon2 = Argon2::default();
+    let hash = argon2
+        .hash_password(password.as_bytes(), &salt)
+        .map_err(|e| anyhow::anyhow!("Password hash failed: {e}"))?;
+    Ok(hash.to_string())
+}
+
+fn verify_password(password: &str, hash: &str) -> bool {
+    let parsed = match PasswordHash::new(hash) {
+        Ok(h) => h,
+        Err(_) => return false,
+    };
+    Argon2::default().verify_password(password.as_bytes(), &parsed).is_ok()
+}
+
+fn create_token(username: &str, secret: &str) -> Result<String> {
+    let now = chrono::Utc::now().timestamp() as usize;
+    let claims = JwtClaims {
+        sub: username.to_string(),
+        exp: now + 7 * 24 * 3600, // 7 days
+        iat: now,
+        sid: uuid::Uuid::new_v4().to_string(),
+    };
+    encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(secret.as_bytes()),
+    )
+    .map_err(|e| anyhow::anyhow!("JWT encode failed: {e}"))
+}
+
+fn validate_token(token: &str, secret: &str) -> Option<JwtClaims> {
+    decode::<JwtClaims>(
+        token,
+        &DecodingKey::from_secret(secret.as_bytes()),
+        &Validation::default(),
+    )
+    .ok()
+    .map(|data| data.claims)
+}
+
+/// Axum middleware: check for valid JWT on protected routes.
+/// If no user is registered yet (first-start), allow all requests through.
+async fn auth_middleware(
+    State(state): State<Arc<AppState>>,
+    mut req: axum::http::Request<axum::body::Body>,
+    next: Next,
+) -> impl IntoResponse {
+    let user = state.config.read().unwrap().user.clone();
+
+    // If no user account exists yet, skip auth (first-start mode)
+    if user.username.is_empty() || user.password_hash.is_empty() {
+        return next.run(req).await;
+    }
+
+    // Extract token from Authorization header or query param
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.strip_prefix("Bearer "))
+        .map(|s| s.to_string())
+        .or_else(|| {
+            // Fallback: check ?token= query parameter
+            let uri = req.uri().to_string();
+            url_token_param(&uri)
+        });
+
+    let token = match token {
+        Some(t) => t,
+        None => {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(serde_json::json!({"error": "Authentication required. Please log in."})),
+            ).into_response();
+        }
+    };
+
+    let secret = jwt_secret(&state);
+    match validate_token(&token, &secret) {
+        Some(claims) => {
+            // Attach claims to request extensions for downstream handlers
+            req.extensions_mut().insert(claims);
+            next.run(req).await
+        }
+        None => {
+            (
+                StatusCode::UNAUTHORIZED,
+                Json(serde_json::json!({"error": "Invalid or expired session. Please log in again."})),
+            ).into_response()
+        }
+    }
+}
+
+fn url_token_param(uri: &str) -> Option<String> {
+    uri.split('?')
+        .nth(1)?
+        .split('&')
+        .find(|p| p.starts_with("token="))
+        .map(|p| p[6..].to_string())
+}
+
+// ── POST /api/auth/register — create admin account (only works once) ──
+
+#[derive(Debug, Deserialize)]
+struct RegisterPayload {
+    username: String,
+    password: String,
+    display_name: Option<String>,
+    email: Option<String>,
+}
+
+async fn auth_register(
+    State(state): State<Arc<AppState>>,
+    Json(payload): Json<RegisterPayload>,
+) -> impl IntoResponse {
+    // Check if a user already exists — registration is one-time only
+    {
+        let user = state.config.read().unwrap().user.clone();
+        if !user.username.is_empty() && !user.password_hash.is_empty() {
+            return (StatusCode::CONFLICT, Json(serde_json::json!({
+                "error": "Admin account already exists. Use login instead."
+            }))).into_response();
+        }
+    }
+
+    // Validate input
+    let username = payload.username.trim().to_string();
+    let password = payload.password.trim().to_string();
+    if username.len() < 3 {
+        return (StatusCode::BAD_REQUEST, Json(serde_json::json!({
+            "error": "Username must be at least 3 characters."
+        }))).into_response();
+    }
+    if password.len() < 6 {
+        return (StatusCode::BAD_REQUEST, Json(serde_json::json!({
+            "error": "Password must be at least 6 characters."
+        }))).into_response();
+    }
+
+    // Hash password
+    let password_hash = match hash_password(&password) {
+        Ok(h) => h,
+        Err(e) => {
+            error!("Password hash failed: {e}");
+            return (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({
+                "error": "Internal error during account creation."
+            }))).into_response();
+        }
+    };
+
+    let jwt_secret = generate_jwt_secret();
+    let display_name = payload.display_name.unwrap_or_else(|| username.clone());
+    let email = payload.email.unwrap_or_default();
+    let initials = display_name
+        .split_whitespace()
+        .filter_map(|w| w.chars().next())
+        .take(2)
+        .collect::<String>()
+        .to_uppercase();
+
+    // Update in-memory config
+    {
+        let mut config = state.config.write().unwrap();
+        config.user.username = username.clone();
+        config.user.password_hash = password_hash.clone();
+        config.user.display_name = display_name.clone();
+        config.user.email = email.clone();
+        config.user.role = "admin".to_string();
+        config.user.avatar_initials = if initials.is_empty() { username[..1].to_uppercase() } else { initials.clone() };
+        config.user.jwt_secret = jwt_secret.clone();
+    }
+
+    // Persist to engram.toml
+    if let Err(e) = persist_user_config(&state.config_path, &username, &password_hash, &display_name, &email, &jwt_secret) {
+        error!("Failed to persist user config: {e}");
+        return (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({
+            "error": format!("Account created in memory but failed to save: {e}")
+        }))).into_response();
+    }
+
+    // Generate token
+    let token = match create_token(&username, &jwt_secret) {
+        Ok(t) => t,
+        Err(e) => {
+            error!("Token creation failed: {e}");
+            return (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({
+                "error": "Account created but token generation failed."
+            }))).into_response();
+        }
+    };
+
+    info!("Admin account created: {}", username);
+    Json(serde_json::json!({
+        "status": "ok",
+        "token": token,
+        "user": {
+            "username": username,
+            "display_name": display_name,
+            "email": email,
+            "role": "admin",
+            "avatar_initials": if initials.is_empty() { username[..1].to_uppercase() } else { initials },
+        }
+    })).into_response()
+}
+
+// ── POST /api/auth/login ──
+
+#[derive(Debug, Deserialize)]
+struct LoginPayload {
+    username: String,
+    password: String,
+}
+
+async fn auth_login(
+    State(state): State<Arc<AppState>>,
+    Json(payload): Json<LoginPayload>,
+) -> impl IntoResponse {
+    let user = state.config.read().unwrap().user.clone();
+
+    // If no account exists, return specific error
+    if user.username.is_empty() || user.password_hash.is_empty() {
+        return (StatusCode::NOT_FOUND, Json(serde_json::json!({
+            "error": "No account configured. Complete the setup wizard first.",
+            "needs_setup": true,
+        }))).into_response();
+    }
+
+    // Verify credentials
+    if payload.username.trim() != user.username {
+        return (StatusCode::UNAUTHORIZED, Json(serde_json::json!({
+            "error": "Invalid username or password."
+        }))).into_response();
+    }
+
+    if !verify_password(payload.password.trim(), &user.password_hash) {
+        warn!("Failed login attempt for user: {}", payload.username);
+        return (StatusCode::UNAUTHORIZED, Json(serde_json::json!({
+            "error": "Invalid username or password."
+        }))).into_response();
+    }
+
+    // Generate token
+    let secret = jwt_secret(&state);
+    let token = match create_token(&user.username, &secret) {
+        Ok(t) => t,
+        Err(e) => {
+            error!("Token creation failed: {e}");
+            return (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({
+                "error": "Login succeeded but session creation failed."
+            }))).into_response();
+        }
+    };
+
+    info!("User logged in: {}", user.username);
+    Json(serde_json::json!({
+        "status": "ok",
+        "token": token,
+        "user": {
+            "username": user.username,
+            "display_name": user.display_name,
+            "email": user.email,
+            "role": user.role,
+            "avatar_initials": user.avatar_initials,
+        }
+    })).into_response()
+}
+
+// ── GET /api/auth/status — check if account exists (public) ──
+
+async fn auth_status(
+    State(state): State<Arc<AppState>>,
+) -> impl IntoResponse {
+    let user = state.config.read().unwrap().user.clone();
+    let has_account = !user.username.is_empty() && !user.password_hash.is_empty();
+    Json(serde_json::json!({
+        "has_account": has_account,
+        "username": if has_account { user.username } else { String::new() },
+    }))
+}
+
+// ── GET /api/auth/me — get current user profile (protected) ──
+
+async fn auth_me(
+    State(state): State<Arc<AppState>>,
+) -> impl IntoResponse {
+    let user = state.config.read().unwrap().user.clone();
+    Json(serde_json::json!({
+        "username": user.username,
+        "display_name": user.display_name,
+        "email": user.email,
+        "role": user.role,
+        "avatar_initials": user.avatar_initials,
+    }))
+}
+
+// ── POST /api/auth/change-password ──
+
+#[derive(Debug, Deserialize)]
+struct ChangePasswordPayload {
+    current_password: String,
+    new_password: String,
+}
+
+async fn auth_change_password(
+    State(state): State<Arc<AppState>>,
+    Json(payload): Json<ChangePasswordPayload>,
+) -> impl IntoResponse {
+    let user = state.config.read().unwrap().user.clone();
+
+    // Verify current password
+    if !verify_password(&payload.current_password, &user.password_hash) {
+        return (StatusCode::UNAUTHORIZED, Json(serde_json::json!({
+            "error": "Current password is incorrect."
+        }))).into_response();
+    }
+
+    if payload.new_password.len() < 6 {
+        return (StatusCode::BAD_REQUEST, Json(serde_json::json!({
+            "error": "New password must be at least 6 characters."
+        }))).into_response();
+    }
+
+    // Hash new password
+    let new_hash = match hash_password(&payload.new_password) {
+        Ok(h) => h,
+        Err(e) => {
+            error!("Password hash failed: {e}");
+            return (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({
+                "error": "Failed to update password."
+            }))).into_response();
+        }
+    };
+
+    // Generate new JWT secret to invalidate all existing sessions
+    let new_jwt_secret = generate_jwt_secret();
+
+    // Update in-memory
+    {
+        let mut config = state.config.write().unwrap();
+        config.user.password_hash = new_hash.clone();
+        config.user.jwt_secret = new_jwt_secret.clone();
+    }
+
+    // Persist
+    let c = state.config.read().unwrap().user.clone();
+    if let Err(e) = persist_user_config(&state.config_path, &c.username, &new_hash, &c.display_name, &c.email, &new_jwt_secret) {
+        error!("Failed to persist password change: {e}");
+    }
+
+    // Issue new token with new secret
+    let token = create_token(&c.username, &new_jwt_secret).unwrap_or_default();
+
+    info!("Password changed for user: {}", c.username);
+    Json(serde_json::json!({
+        "status": "ok",
+        "message": "Password changed successfully. All other sessions have been invalidated.",
+        "token": token,
+    })).into_response()
+}
+
+// ── POST /api/auth/update-profile ──
+
+#[derive(Debug, Deserialize)]
+struct UpdateProfilePayload {
+    display_name: Option<String>,
+    email: Option<String>,
+}
+
+async fn auth_update_profile(
+    State(state): State<Arc<AppState>>,
+    Json(payload): Json<UpdateProfilePayload>,
+) -> impl IntoResponse {
+    let (username, password_hash, jwt_secret_val);
+    {
+        let user = state.config.read().unwrap().user.clone();
+        username = user.username.clone();
+        password_hash = user.password_hash.clone();
+        jwt_secret_val = user.jwt_secret.clone();
+    }
+
+    let display_name = payload.display_name.unwrap_or_else(|| {
+        state.config.read().unwrap().user.display_name.clone()
+    });
+    let email = payload.email.unwrap_or_else(|| {
+        state.config.read().unwrap().user.email.clone()
+    });
+
+    let initials = display_name
+        .split_whitespace()
+        .filter_map(|w| w.chars().next())
+        .take(2)
+        .collect::<String>()
+        .to_uppercase();
+
+    // Update in-memory
+    {
+        let mut config = state.config.write().unwrap();
+        config.user.display_name = display_name.clone();
+        config.user.email = email.clone();
+        config.user.avatar_initials = if initials.is_empty() { username[..1].to_uppercase() } else { initials.clone() };
+    }
+
+    // Persist
+    if let Err(e) = persist_user_config(&state.config_path, &username, &password_hash, &display_name, &email, &jwt_secret_val) {
+        error!("Failed to persist profile update: {e}");
+        return (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({
+            "error": format!("Failed to save profile: {e}")
+        }))).into_response();
+    }
+
+    info!("Profile updated for user: {}", username);
+    Json(serde_json::json!({
+        "status": "ok",
+        "user": {
+            "username": username,
+            "display_name": display_name,
+            "email": email,
+            "role": "admin",
+            "avatar_initials": if initials.is_empty() { username[..1].to_uppercase() } else { initials },
+        }
+    })).into_response()
+}
+
+// ── GET /api/auth/sessions — session info ──
+
+async fn auth_sessions(
+    State(state): State<Arc<AppState>>,
+    req: axum::http::Request<axum::body::Body>,
+) -> impl IntoResponse {
+    let claims = req.extensions().get::<JwtClaims>().cloned();
+    let user = state.config.read().unwrap().user.clone();
+    Json(serde_json::json!({
+        "current_session": claims.map(|c| serde_json::json!({
+            "session_id": c.sid,
+            "issued_at": c.iat,
+            "expires_at": c.exp,
+            "username": c.sub,
+        })),
+        "security": {
+            "password_set": !user.password_hash.is_empty(),
+            "jwt_configured": !user.jwt_secret.is_empty(),
+        }
+    }))
+}
+
+/// Persist user profile to engram.toml [user] section
+fn persist_user_config(
+    path: &std::path::Path,
+    username: &str,
+    password_hash: &str,
+    display_name: &str,
+    email: &str,
+    jwt_secret: &str,
+) -> Result<()> {
+    let mut content = std::fs::read_to_string(path)?;
+
+    // Build the [user] section
+    let user_block = format!(
+        r#"[user]
+username = "{}"
+password_hash = "{}"
+display_name = "{}"
+email = "{}"
+role = "admin"
+avatar_initials = "{}"
+jwt_secret = "{}""#,
+        username,
+        password_hash.replace('"', r#"\""#),
+        display_name,
+        email,
+        display_name
+            .split_whitespace()
+            .filter_map(|w| w.chars().next())
+            .take(2)
+            .collect::<String>()
+            .to_uppercase(),
+        jwt_secret,
+    );
+
+    // Replace existing [user] section or append
+    if let Some(start) = content.find("[user]") {
+        // Find the end of [user] section (next [section] or EOF)
+        let after = &content[start + 6..];
+        let end = after
+            .find("\n[")
+            .map(|pos| start + 6 + pos)
+            .unwrap_or(content.len());
+        content.replace_range(start..end, &user_block);
+    } else {
+        // Insert before [github] or append
+        if let Some(pos) = content.find("[github]") {
+            content.insert_str(pos, &format!("{}\n\n", user_block));
+        } else {
+            content.push_str(&format!("\n\n{}\n", user_block));
+        }
+    }
+
+    std::fs::write(path, content)?;
+    Ok(())
 }
 
 // ─── GitHub Webhook ───
@@ -535,6 +1093,18 @@ async fn api_dashboard_tech_debt(State(state): State<Arc<AppState>>, axum::extra
     dashboard_query!(state, tech_debt, dash_project_filter(&q.project_id), sort_newest(), 50)
 }
 
+async fn api_dashboard_onboarding_tracks(State(state): State<Arc<AppState>>, axum::extract::Query(q): axum::extract::Query<ProjectQuery>) -> impl IntoResponse {
+    dashboard_query!(state, onboarding_tracks, dash_project_filter(&q.project_id), None, 100)
+}
+
+async fn api_dashboard_onboarding_steps(State(state): State<Arc<AppState>>, axum::extract::Query(q): axum::extract::Query<ProjectQuery>) -> impl IntoResponse {
+    dashboard_query!(state, onboarding_steps, dash_project_filter(&q.project_id), None, 200)
+}
+
+async fn api_dashboard_knowledge_gaps(State(state): State<Arc<AppState>>, axum::extract::Query(q): axum::extract::Query<ProjectQuery>) -> impl IntoResponse {
+    dashboard_query!(state, knowledge_gaps, dash_project_filter(&q.project_id), sort_newest(), 100)
+}
+
 async fn api_dashboard_digest(State(state): State<Arc<AppState>>, axum::extract::Query(q): axum::extract::Query<ProjectQuery>) -> impl IntoResponse {
     dashboard_query!(state, engineering_digest, dash_project_filter(&q.project_id), sort_newest(), 10)
 }
@@ -674,6 +1244,7 @@ async fn api_get_config(
             "notion_configured": !c.auth.notion_mcp_token.is_empty(),
             "anthropic_configured": !c.auth.anthropic_api_key.is_empty(),
         },
+        "webhook_secret_set": !c.auth.webhook_secret.is_empty(),
     }))
 }
 

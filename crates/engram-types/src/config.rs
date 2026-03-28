@@ -13,6 +13,28 @@ pub struct EngramConfig {
     pub databases: DatabaseIds,
     #[serde(default)]
     pub github: GitHubConfig,
+    #[serde(default)]
+    pub user: UserProfile,
+}
+
+/// Dashboard user profile — created during first-start setup
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct UserProfile {
+    #[serde(default)]
+    pub username: String,
+    #[serde(default)]
+    pub password_hash: String,
+    #[serde(default)]
+    pub display_name: String,
+    #[serde(default)]
+    pub email: String,
+    #[serde(default)]
+    pub role: String,
+    #[serde(default)]
+    pub avatar_initials: String,
+    /// Random 64-char hex string generated on first setup, used to sign JWTs
+    #[serde(default)]
+    pub jwt_secret: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -133,6 +155,9 @@ impl EngramConfig {
         }
         if let Ok(val) = std::env::var("CLAUDE_MODEL") {
             if !val.is_empty() { config.claude.model = val; }
+        }
+        if let Ok(val) = std::env::var("ENGRAM_JWT_SECRET") {
+            if !val.is_empty() { config.user.jwt_secret = val; }
         }
 
         Ok(config)

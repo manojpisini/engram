@@ -35,6 +35,16 @@ weekly_rfc_staleness = "0 0 10 * * 1 *"
 daily_rotation_check = "0 0 3 * * * *"
 weekly_knowledge_gap_scan = "0 0 11 * * 1 *"
 
+[user]
+# Created automatically during first-start setup — do not edit manually
+username = ""
+password_hash = ""
+display_name = ""
+email = ""
+role = "admin"
+avatar_initials = ""
+jwt_secret = ""
+
 [github]
 repos = []
 

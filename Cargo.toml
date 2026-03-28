@@ -65,6 +65,11 @@ hex = "0.4"
 # Environment
 dotenvy = "0.15"
 
+# Authentication
+argon2 = "0.5"
+jsonwebtoken = "9"
+rand = "0.8"
+
 # Shared types
 engram-types = { path = "crates/engram-types" }
 engram-decisions = { path = "crates/engram-decisions" }

@@ -242,12 +242,79 @@
         .empty { text-align:center; padding:40px; color:var(--text3); }
         .empty-icon { font-size:32px; margin-bottom:8px; opacity:0.3; }
 
+        /* ── Login overlay ── */
+        .login-overlay { position:fixed; inset:0; z-index:10000; background:var(--bg); display:flex; align-items:center; justify-content:center; }
+        .login-box { width:100%; max-width:400px; padding:48px 40px; }
+        .login-box h1 { font-size:32px; font-weight:800; color:var(--accent); letter-spacing:5px; text-align:center; margin-bottom:4px; }
+        .login-box .login-sub { text-align:center; color:var(--text3); font-size:12px; margin-bottom:32px; }
+        .login-box .login-avatar { width:64px; height:64px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:800; color:var(--bg); margin:0 auto 20px; }
+        .login-box .form-group { margin-top:16px; }
+        .login-box .form-group input { padding:12px 16px; font-size:13px; border-radius:8px; }
+        .login-box .btn-login { width:100%; padding:14px; font-size:14px; border-radius:8px; margin-top:20px; letter-spacing:1px; }
+        .login-box .login-error { color:var(--red); font-size:12px; text-align:center; margin-top:12px; min-height:18px; }
+        .login-box .login-footer { text-align:center; color:var(--text3); font-size:10px; margin-top:24px; }
+
+        /* ── Settings tabs ── */
+        .settings-tabs { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:20px; }
+        .settings-tab { padding:10px 20px; font-size:12px; font-weight:600; color:var(--text3); cursor:pointer; border-bottom:2px solid transparent; transition:all 0.15s; letter-spacing:0.5px; }
+        .settings-tab:hover { color:var(--text); }
+        .settings-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+        .settings-tab-content { display:none; }
+        .settings-tab-content.active { display:block; }
+        .profile-header { display:flex; align-items:center; gap:20px; margin-bottom:24px; padding:20px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); }
+        .profile-avatar { width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:800; color:var(--bg); flex-shrink:0; }
+        .profile-info h3 { font-size:16px; font-weight:700; color:var(--text); margin-bottom:2px; }
+        .profile-info p { font-size:11px; color:var(--text3); }
+        .security-item { display:flex; align-items:center; justify-content:space-between; padding:16px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:10px; }
+        .security-item .sec-left { display:flex; align-items:center; gap:12px; }
+        .security-item .sec-icon { width:36px; height:36px; border-radius:8px; background:var(--surface2); display:flex; align-items:center; justify-content:center; font-size:16px; }
+        .security-item h4 { font-size:13px; font-weight:600; color:var(--text); margin-bottom:2px; }
+        .security-item p { font-size:11px; color:var(--text3); }
+        .security-badge { font-size:10px; font-weight:600; padding:4px 10px; border-radius:20px; }
+        .security-badge.ok { background:#14532d; color:#86efac; }
+        .security-badge.warn { background:#78350f; color:#fcd34d; }
+
+        /* ── User menu in topbar ── */
+        .user-menu { position:relative; cursor:pointer; }
+        .user-avatar-sm { width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; color:var(--bg); transition:box-shadow 0.15s; }
+        .user-avatar-sm:hover { box-shadow:0 0 0 2px var(--accent); }
+        .user-dropdown { display:none; position:absolute; top:calc(100% + 8px); right:0; background:var(--surface); border:1px solid var(--border2); border-radius:10px; padding:8px 0; min-width:200px; box-shadow:0 8px 32px rgba(0,0,0,0.5); z-index:200; }
+        .user-dropdown.open { display:block; }
+        .user-dropdown .ud-header { padding:12px 16px; border-bottom:1px solid var(--border); }
+        .user-dropdown .ud-header h4 { font-size:13px; font-weight:600; color:var(--text); }
+        .user-dropdown .ud-header p { font-size:10px; color:var(--text3); }
+        .user-dropdown .ud-item { display:flex; align-items:center; gap:10px; padding:10px 16px; font-size:12px; color:var(--text2); cursor:pointer; transition:background 0.1s; }
+        .user-dropdown .ud-item:hover { background:var(--surface2); color:var(--text); }
+        .user-dropdown .ud-divider { height:1px; background:var(--border); margin:4px 0; }
+        .user-dropdown .ud-item.danger { color:var(--red); }
+
         /* ── Responsive ── */
         @media(max-width:1024px) { .g3,.g4,.g6{grid-template-columns:repeat(2,1fr);} .layer-grid{grid-template-columns:repeat(2,1fr);} }
         @media(max-width:768px) { .sidebar{display:none;} .g2,.g3,.g4,.g6{grid-template-columns:1fr;} .span2,.span3{grid-column:1;} .layer-grid{grid-template-columns:1fr;} .hero-score{flex-direction:column;text-align:center;} }
     </style>
 </head>
 <body>
+
+<!-- LOGIN OVERLAY -->
+<div class="login-overlay" id="loginOverlay" style="display:none;">
+    <div class="login-box">
+        <h1>ENGRAM</h1>
+        <div class="login-sub">Engineering Intelligence Platform</div>
+        <div class="login-avatar" id="loginAvatar">E</div>
+        <div id="loginGreeting" style="text-align:center;font-size:13px;color:var(--text2);margin-bottom:8px;"></div>
+        <div class="form-group">
+            <label>Username</label>
+            <input id="loginUsername" type="text" placeholder="Enter your username" autocomplete="username" spellcheck="false">
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input id="loginPassword" type="password" placeholder="Enter your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+        </div>
+        <button class="btn btn-login" onclick="doLogin()">Sign In</button>
+        <div class="login-error" id="loginError"></div>
+        <div class="login-footer">Secured with Argon2 password hashing &amp; JWT sessions</div>
+    </div>
+</div>
 
 <!-- FIRST-START SETUP OVERLAY -->
 <div class="first-start-overlay" id="firstStartOverlay" style="display:none;">
@@ -261,17 +328,52 @@
 
         <!-- Progress indicator -->
         <div class="fs-progress">
-            <div class="fs-progress-step active"><div class="fs-progress-dot">1</div><div class="fs-progress-label">Notion</div></div>
-            <div class="fs-progress-step active"><div class="fs-progress-dot">2</div><div class="fs-progress-label">GitHub</div></div>
-            <div class="fs-progress-step active"><div class="fs-progress-dot">3</div><div class="fs-progress-label">AI</div></div>
-            <div class="fs-progress-step active"><div class="fs-progress-dot">4</div><div class="fs-progress-label">Server</div></div>
+            <div class="fs-progress-step active"><div class="fs-progress-dot">1</div><div class="fs-progress-label">Account</div></div>
+            <div class="fs-progress-step active"><div class="fs-progress-dot">2</div><div class="fs-progress-label">Notion</div></div>
+            <div class="fs-progress-step active"><div class="fs-progress-dot">3</div><div class="fs-progress-label">GitHub</div></div>
+            <div class="fs-progress-step active"><div class="fs-progress-dot">4</div><div class="fs-progress-label">AI</div></div>
+            <div class="fs-progress-step active"><div class="fs-progress-dot">5</div><div class="fs-progress-label">Server</div></div>
         </div>
 
         <div class="fs-grid">
 
-            <!-- 1. Notion -->
-            <div class="fs-step">
+            <!-- 0. Admin Account -->
+            <div class="fs-step fs-full">
                 <div class="fs-step-num">STEP 1</div>
+                <h3>Create Admin Account</h3>
+                <div class="fs-desc">Set up your login credentials. This account secures the ENGRAM dashboard and all API endpoints with JWT authentication.</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input id="fsUsername" type="text" placeholder="admin" autocomplete="username" spellcheck="false">
+                        <div class="form-hint">Min 3 characters. Used to log in to the dashboard.</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Display Name</label>
+                        <input id="fsDisplayName" type="text" placeholder="John Doe" autocomplete="name" spellcheck="false">
+                        <div class="form-hint">Your full name, shown in the dashboard header.</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input id="fsPassword" type="password" placeholder="Min 6 characters" autocomplete="new-password">
+                        <div class="form-hint">Hashed with Argon2 — never stored in plain text.</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Confirm Password</label>
+                        <input id="fsPasswordConfirm" type="password" placeholder="Re-enter password" autocomplete="new-password">
+                        <div class="form-hint">Must match the password above.</div>
+                    </div>
+                    <div class="form-group" style="grid-column:1/-1;">
+                        <label>Email (Optional)</label>
+                        <input id="fsEmail" type="email" placeholder="you@company.com" autocomplete="email" spellcheck="false">
+                        <div class="form-hint">Used for your profile. Not shared externally.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Notion -->
+            <div class="fs-step">
+                <div class="fs-step-num">STEP 2</div>
                 <h3>Notion Workspace</h3>
                 <div class="fs-desc">Connect your Notion workspace to store all engineering intelligence data. ENGRAM will create 23 databases automatically.</div>
                 <div class="form-group">
@@ -316,9 +418,9 @@
                 </div>
             </div>
 
-            <!-- 2. GitHub -->
+            <!-- 3. GitHub -->
             <div class="fs-step">
-                <div class="fs-step-num">STEP 2</div>
+                <div class="fs-step-num">STEP 3</div>
                 <h3>GitHub Connection</h3>
                 <div class="fs-desc">Link your GitHub account to ingest webhooks from your repositories.</div>
                 <div class="form-group">
@@ -373,9 +475,9 @@
                 </div>
             </div>
 
-            <!-- 3. AI Intelligence -->
+            <!-- 4. AI Intelligence -->
             <div class="fs-step">
-                <div class="fs-step-num">STEP 3</div>
+                <div class="fs-step-num">STEP 4</div>
                 <h3>AI Intelligence</h3>
                 <div class="fs-desc">Power the 9 analysis agents with Claude to generate engineering insights.</div>
                 <div class="form-group">
@@ -395,9 +497,9 @@
                 </div>
             </div>
 
-            <!-- 4. Server Config -->
+            <!-- 5. Server Config -->
             <div class="fs-step">
-                <div class="fs-step-num">OPTIONAL</div>
+                <div class="fs-step-num">STEP 5</div>
                 <h3>Server Configuration</h3>
                 <div class="fs-desc">Defaults work for local use. Only change these if deploying to a server or using a custom port.</div>
                 <div class="fs-server-grid">
@@ -440,6 +542,20 @@
             <span class="status-dot" id="statusDot"></span>
             <span id="statusText">Connecting...</span>
         </div>
+        <div class="user-menu" id="userMenu" style="display:none;">
+            <div class="user-avatar-sm" id="topbarAvatar" onclick="toggleUserMenu()">E</div>
+            <div class="user-dropdown" id="userDropdown">
+                <div class="ud-header">
+                    <h4 id="udName">User</h4>
+                    <p id="udEmail">admin</p>
+                </div>
+                <div class="ud-item" onclick="navTo('settings');closeUserMenu()">&#9881; Settings</div>
+                <div class="ud-item" onclick="navTo('settings');switchSettingsTab('profile');closeUserMenu()">&#128100; Profile</div>
+                <div class="ud-item" onclick="navTo('settings');switchSettingsTab('security');closeUserMenu()">&#128274; Security</div>
+                <div class="ud-divider"></div>
+                <div class="ud-item danger" onclick="doLogout()">&#9211; Sign Out</div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -458,6 +574,7 @@
     <div class="sidebar-item" data-tab="pulse"><span class="sidebar-icon">&#9889;</span>Pulse</div>
     <div class="sidebar-item" data-tab="shield"><span class="sidebar-icon">&#9888;</span>Shield</div>
     <div class="sidebar-item" data-tab="atlas"><span class="sidebar-icon">&#9776;</span>Atlas</div>
+    <div class="sidebar-item" data-tab="onboarding"><span class="sidebar-icon">&#128218;</span>Onboarding</div>
     <div class="sidebar-item" data-tab="vault"><span class="sidebar-icon">&#128274;</span>Vault</div>
     <div class="sidebar-item" data-tab="review"><span class="sidebar-icon">&#128269;</span>Review</div>
     <div class="sidebar-section" style="margin-top:16px;"><div class="sidebar-label">System</div></div>
@@ -745,6 +862,72 @@
     <div class="card full"><div class="card-title">Modules</div><table class="tbl"><thead><tr><th>Module</th><th>Summary</th><th>Complexity</th><th>Status</th></tr></thead><tbody id="tbModules"></tbody></table></div>
 </div>
 
+<!-- ═══ ONBOARDING ═══ -->
+<div class="panel" id="p-onboarding">
+    <!-- Stats -->
+    <div class="g g4" style="margin-bottom:16px;">
+        <div class="card stat"><div class="stat-val" id="obTracks">0</div><div class="stat-label">Tracks</div></div>
+        <div class="card stat"><div class="stat-val" id="obSteps">0</div><div class="stat-label">Total Steps</div></div>
+        <div class="card stat"><div class="stat-val c-amber" id="obGaps">0</div><div class="stat-label">Knowledge Gaps</div></div>
+        <div class="card stat"><div class="stat-val c-blue" id="obAutoGen">0</div><div class="stat-label">AI-Generated</div></div>
+    </div>
+
+    <!-- Generate Onboarding Form -->
+    <div class="card full" style="margin-bottom:16px;">
+        <div class="card-title" style="margin-bottom:12px;">Generate Onboarding Track</div>
+        <p style="font-size:11px;color:var(--text3);margin-bottom:12px;">Use Claude AI to generate a personalized onboarding track for a new engineer joining your project.</p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+            <div class="form-group" style="flex:1;min-width:160px;margin:0;">
+                <label>Engineer Name</label>
+                <input id="obName" placeholder="e.g. Alice" autocomplete="off">
+            </div>
+            <div class="form-group" style="flex:1;min-width:140px;margin:0;">
+                <label>Role</label>
+                <select id="obRole" style="padding:8px 10px;border-radius:6px;background:var(--surface2);color:var(--text1);border:1px solid var(--border);font-size:12px;">
+                    <option value="backend">Backend</option>
+                    <option value="frontend">Frontend</option>
+                    <option value="full-stack">Full-Stack</option>
+                    <option value="devops">DevOps</option>
+                    <option value="oss">OSS Contributor</option>
+                </select>
+            </div>
+            <div class="form-group" style="flex:1;min-width:180px;margin:0;">
+                <label>Repository</label>
+                <input id="obRepo" placeholder="owner/repo (optional)" autocomplete="off">
+            </div>
+            <button class="btn" onclick="triggerOnboarding()" style="height:36px;">Generate Track</button>
+        </div>
+        <div id="obStatus" style="margin-top:8px;font-size:12px;"></div>
+    </div>
+
+    <!-- Onboarding Tracks Table -->
+    <div class="card full" style="margin-bottom:16px;">
+        <div class="card-title">Onboarding Tracks</div>
+        <table class="tbl">
+            <thead><tr><th>Track Name</th><th>Role</th><th>Steps</th><th>Est. Hours</th></tr></thead>
+            <tbody id="tbOnboardTracks"></tbody>
+        </table>
+    </div>
+
+    <!-- Onboarding Steps Table -->
+    <div class="card full" style="margin-bottom:16px;">
+        <div class="card-title">Onboarding Steps</div>
+        <table class="tbl">
+            <thead><tr><th>Step</th><th>Week/Day</th><th>Type</th><th>Description</th><th>Est. Time</th><th>AI</th></tr></thead>
+            <tbody id="tbOnboardSteps"></tbody>
+        </table>
+    </div>
+
+    <!-- Knowledge Gaps Table -->
+    <div class="card full">
+        <div class="card-title">Knowledge Gaps</div>
+        <table class="tbl">
+            <thead><tr><th>Gap</th><th>Type</th><th>Severity</th><th>Status</th><th>Detected</th></tr></thead>
+            <tbody id="tbKnowledgeGaps"></tbody>
+        </table>
+    </div>
+</div>
+
 <!-- ═══ VAULT ═══ -->
 <div class="panel" id="p-vault">
     <div class="g g3" style="margin-bottom:16px;">
@@ -904,75 +1087,183 @@
 
 <!-- ═══ SETTINGS ═══ -->
 <div class="panel" id="p-settings">
-    <div class="g g2">
-        <!-- Connections / Tokens -->
-        <div class="card">
-            <div class="card-title" style="margin-bottom:12px;">Connections &amp; Tokens</div>
-            <p style="font-size:11px;color:var(--text3);margin-bottom:12px;">Enter your tokens below. They are saved to engram.toml on the server and take effect immediately &mdash; no restart needed.</p>
-            <div class="form-group">
-                <label>GitHub Personal Access Token</label>
-                <input id="cfgGithubToken" type="password" placeholder="github_pat_..." autocomplete="off">
-                <span style="font-size:10px;color:var(--text3)">Create at github.com/settings/tokens &mdash; needs repo, read:org scopes</span>
-            </div>
-            <div class="form-group">
-                <label>GitHub Repos (comma-separated, e.g. owner/repo)</label>
-                <input id="cfgGithubRepos" placeholder="myuser/my-project, myuser/other-repo">
-                <div id="webhookUrlGuide" style="display:none;margin-top:10px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;">
-                    <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--accent);font-weight:600;margin-bottom:6px;">Webhook Setup Required Per Repo</div>
-                    <p style="font-size:11px;color:var(--text2);margin-bottom:6px;">For each repo above, add a webhook in <strong>GitHub &rarr; Repo Settings &rarr; Webhooks</strong>:</p>
-                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-                        <code id="webhookUrlValue" style="flex:1;font-size:11px;word-break:break-all;"></code>
-                        <button class="btn btn-sm btn-ghost" onclick="navigator.clipboard.writeText($('webhookUrlValue').textContent)" style="white-space:nowrap;">Copy</button>
-                    </div>
-                    <p style="font-size:10px;color:var(--text3);">Content type: <code>application/json</code> &mdash; Events: Pull requests, Pushes</p>
-                    <p style="font-size:10px;color:var(--accent);margin-top:4px;">For localhost: use <code>.github/workflows/engram-notify.yml</code> GitHub Action workflow instead (no tunnel needed).</p>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Notion Integration Token</label>
-                <input id="cfgNotionToken" type="password" placeholder="ntn_..." autocomplete="off">
-                <span style="font-size:10px;color:var(--text3)">Create at notion.so/profile/integrations</span>
-            </div>
-            <div class="form-group">
-                <label>Notion Parent Page ID (auto-populated)</label>
-                <input id="cfgWorkspaceId" placeholder="Auto-created during setup" readonly style="opacity:0.6;cursor:not-allowed;">
-                <span style="font-size:10px;color:var(--text3)">Automatically created at workspace root during setup — no manual entry needed</span>
-            </div>
-            <div class="form-group">
-                <label>Anthropic API Key</label>
-                <input id="cfgAnthropicKey" type="password" placeholder="sk-ant-..." autocomplete="off">
-                <span style="font-size:10px;color:var(--text3)">From console.anthropic.com/settings/keys</span>
-            </div>
-            <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px;">
-                <div class="card-title" style="margin-bottom:8px;">Webhook &amp; Server</div>
-                <div class="form-group">
-                    <label>Webhook Secret</label>
-                    <input id="cfgWebhookSecret" type="password" placeholder="your-webhook-secret" autocomplete="off">
-                </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                    <div class="form-group">
-                        <label>Server Host / IP</label>
-                        <input id="cfgServerHost" placeholder="127.0.0.1">
-                        <span style="font-size:10px;color:var(--text3)">Default: 127.0.0.1 (local). Use 0.0.0.0 for all interfaces</span>
-                    </div>
-                    <div class="form-group">
-                        <label>Server Port</label>
-                        <input id="cfgServerPort" type="number" placeholder="3000" min="1" max="65535">
-                    </div>
-                </div>
-                <p style="font-size:10px;color:var(--accent);margin-top:8px;">Host/port changes require a service restart to take effect.</p>
-            </div>
-            <div style="margin-top:16px;display:flex;gap:10px;align-items:center;">
-                <button class="btn" onclick="saveServerConfig()">Save Connections</button>
-                <span id="cfgSaveStatus" style="font-size:11px;color:var(--text3);"></span>
+
+    <!-- Settings Tab Bar -->
+    <div class="settings-tabs">
+        <div class="settings-tab active" data-stab="profile" onclick="switchSettingsTab('profile')">Profile</div>
+        <div class="settings-tab" data-stab="security" onclick="switchSettingsTab('security')">Security</div>
+        <div class="settings-tab" data-stab="connections" onclick="switchSettingsTab('connections')">Connections</div>
+        <div class="settings-tab" data-stab="dashboard" onclick="switchSettingsTab('dashboard')">Dashboard</div>
+    </div>
+
+    <!-- ── PROFILE TAB ── -->
+    <div class="settings-tab-content active" id="stab-profile">
+        <div class="profile-header">
+            <div class="profile-avatar" id="profileAvatar">E</div>
+            <div class="profile-info">
+                <h3 id="profileName">Admin</h3>
+                <p id="profileMeta">admin &bull; admin</p>
             </div>
         </div>
-        <!-- Connection Status -->
-        <div class="card">
-            <div class="card-title" style="margin-bottom:12px;">Connection Status</div>
-            <div id="settingsConnStatus">Checking connections...</div>
-            <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px;">
-                <div class="card-title" style="margin-bottom:8px;">Dashboard Settings</div>
+        <div class="g g2">
+            <div class="card">
+                <div class="card-title" style="margin-bottom:14px;">Edit Profile</div>
+                <div class="form-group">
+                    <label>Display Name</label>
+                    <input id="profDisplayName" type="text" placeholder="Your Name" autocomplete="name">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input id="profEmail" type="email" placeholder="you@company.com" autocomplete="email">
+                </div>
+                <div style="margin-top:16px;display:flex;gap:10px;align-items:center;">
+                    <button class="btn" onclick="saveProfile()">Save Profile</button>
+                    <span id="profSaveStatus" style="font-size:11px;color:var(--text3);"></span>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title" style="margin-bottom:14px;">Account Info</div>
+                <table class="tbl">
+                    <tr><td style="color:var(--text3);width:120px;">Username</td><td id="profUsername" style="font-weight:600;">-</td></tr>
+                    <tr><td style="color:var(--text3);">Role</td><td id="profRole">-</td></tr>
+                    <tr><td style="color:var(--text3);">Session</td><td id="profSession">-</td></tr>
+                    <tr><td style="color:var(--text3);">Expires</td><td id="profExpires">-</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── SECURITY TAB ── -->
+    <div class="settings-tab-content" id="stab-security">
+        <div class="security-item">
+            <div class="sec-left">
+                <div class="sec-icon">&#128274;</div>
+                <div>
+                    <h4>Password</h4>
+                    <p>Hashed with Argon2id. Change regularly for best security.</p>
+                </div>
+            </div>
+            <span class="security-badge ok" id="secPassBadge">Set</span>
+        </div>
+        <div class="security-item">
+            <div class="sec-left">
+                <div class="sec-icon">&#128273;</div>
+                <div>
+                    <h4>JWT Authentication</h4>
+                    <p>All API endpoints are protected with signed JSON Web Tokens (7-day expiry).</p>
+                </div>
+            </div>
+            <span class="security-badge ok" id="secJwtBadge">Active</span>
+        </div>
+        <div class="security-item">
+            <div class="sec-left">
+                <div class="sec-icon">&#128737;</div>
+                <div>
+                    <h4>Webhook Verification</h4>
+                    <p>GitHub webhooks are verified with HMAC-SHA256 signatures.</p>
+                </div>
+            </div>
+            <span class="security-badge" id="secWebhookBadge">-</span>
+        </div>
+
+        <!-- Change Password -->
+        <div class="card" style="margin-top:20px;">
+            <div class="card-title" style="margin-bottom:14px;">Change Password</div>
+            <p style="font-size:11px;color:var(--text3);margin-bottom:12px;">Changing your password will invalidate all existing sessions. You will be issued a new token.</p>
+            <div class="form-group">
+                <label>Current Password</label>
+                <input id="secCurrentPass" type="password" placeholder="Enter current password" autocomplete="current-password">
+            </div>
+            <div class="form-group">
+                <label>New Password</label>
+                <input id="secNewPass" type="password" placeholder="Min 6 characters" autocomplete="new-password">
+            </div>
+            <div class="form-group">
+                <label>Confirm New Password</label>
+                <input id="secConfirmPass" type="password" placeholder="Re-enter new password" autocomplete="new-password">
+            </div>
+            <div style="margin-top:16px;display:flex;gap:10px;align-items:center;">
+                <button class="btn" onclick="changePassword()">Change Password</button>
+                <span id="secPassStatus" style="font-size:11px;color:var(--text3);"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── CONNECTIONS TAB ── -->
+    <div class="settings-tab-content" id="stab-connections">
+        <div class="g g2">
+            <div class="card">
+                <div class="card-title" style="margin-bottom:12px;">Connections &amp; Tokens</div>
+                <p style="font-size:11px;color:var(--text3);margin-bottom:12px;">Enter your tokens below. They are saved to engram.toml on the server and take effect immediately.</p>
+                <div class="form-group">
+                    <label>GitHub Personal Access Token</label>
+                    <input id="cfgGithubToken" type="password" placeholder="github_pat_..." autocomplete="off">
+                    <span style="font-size:10px;color:var(--text3)">Create at github.com/settings/tokens — needs repo, read:org scopes</span>
+                </div>
+                <div class="form-group">
+                    <label>GitHub Repos (comma-separated)</label>
+                    <input id="cfgGithubRepos" placeholder="myuser/my-project, myuser/other-repo">
+                    <div id="webhookUrlGuide" style="display:none;margin-top:10px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;">
+                        <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--accent);font-weight:600;margin-bottom:6px;">Webhook Setup Required Per Repo</div>
+                        <p style="font-size:11px;color:var(--text2);margin-bottom:6px;">For each repo above, add a webhook in <strong>GitHub &rarr; Repo Settings &rarr; Webhooks</strong>:</p>
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                            <code id="webhookUrlValue" style="flex:1;font-size:11px;word-break:break-all;"></code>
+                            <button class="btn btn-sm btn-ghost" onclick="navigator.clipboard.writeText($('webhookUrlValue').textContent)" style="white-space:nowrap;">Copy</button>
+                        </div>
+                        <p style="font-size:10px;color:var(--text3);">Content type: <code>application/json</code> — Events: Pull requests, Pushes</p>
+                        <p style="font-size:10px;color:var(--accent);margin-top:4px;">For localhost: use <code>.github/workflows/engram-notify.yml</code> GitHub Action instead.</p>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Notion Integration Token</label>
+                    <input id="cfgNotionToken" type="password" placeholder="ntn_..." autocomplete="off">
+                    <span style="font-size:10px;color:var(--text3)">Create at notion.so/profile/integrations</span>
+                </div>
+                <div class="form-group">
+                    <label>Notion Parent Page ID (auto-populated)</label>
+                    <input id="cfgWorkspaceId" placeholder="Auto-created during setup" readonly style="opacity:0.6;cursor:not-allowed;">
+                </div>
+                <div class="form-group">
+                    <label>Anthropic API Key</label>
+                    <input id="cfgAnthropicKey" type="password" placeholder="sk-ant-..." autocomplete="off">
+                    <span style="font-size:10px;color:var(--text3)">From console.anthropic.com/settings/keys</span>
+                </div>
+                <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px;">
+                    <div class="card-title" style="margin-bottom:8px;">Webhook &amp; Server</div>
+                    <div class="form-group">
+                        <label>Webhook Secret</label>
+                        <input id="cfgWebhookSecret" type="password" placeholder="your-webhook-secret" autocomplete="off">
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                        <div class="form-group">
+                            <label>Server Host / IP</label>
+                            <input id="cfgServerHost" placeholder="127.0.0.1">
+                            <span style="font-size:10px;color:var(--text3)">Default: 127.0.0.1. Use 0.0.0.0 for all interfaces</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Server Port</label>
+                            <input id="cfgServerPort" type="number" placeholder="3000" min="1" max="65535">
+                        </div>
+                    </div>
+                    <p style="font-size:10px;color:var(--accent);margin-top:8px;">Host/port changes require a service restart.</p>
+                </div>
+                <div style="margin-top:16px;display:flex;gap:10px;align-items:center;">
+                    <button class="btn" onclick="saveServerConfig()">Save Connections</button>
+                    <span id="cfgSaveStatus" style="font-size:11px;color:var(--text3);"></span>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title" style="margin-bottom:12px;">Connection Status</div>
+                <div id="settingsConnStatus">Checking connections...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── DASHBOARD TAB ── -->
+    <div class="settings-tab-content" id="stab-dashboard">
+        <div class="g g2">
+            <div class="card">
+                <div class="card-title" style="margin-bottom:12px;">Dashboard Preferences</div>
                 <div class="form-group"><label>ENGRAM API URL</label><input id="cfgUrl" value="http://localhost:3000" placeholder="http://localhost:3000"></div>
                 <div class="form-group"><label>Auto-Refresh (seconds)</label><input type="number" id="cfgRefresh" value="30" min="5" max="300"></div>
                 <div style="margin-top:12px;display:flex;gap:10px;">
@@ -981,14 +1272,13 @@
                 </div>
                 <p style="font-size:10px;color:var(--text3);margin-top:8px;">Dashboard prefs stored in localStorage.</p>
             </div>
+            <div class="card">
+                <div class="card-title" style="margin-bottom:12px;">Server Configuration (from engram.toml)</div>
+                <div id="serverConfig" style="color:var(--text2);font-size:12px;">Loading...</div>
+            </div>
         </div>
     </div>
 
-    <!-- Server config (read-only, from API) -->
-    <div class="card full" style="margin-top:16px;">
-        <div class="card-title" style="margin-bottom:12px;">Server Configuration (from engram.toml)</div>
-        <div id="serverConfig" style="color:var(--text2);font-size:12px;">Loading...</div>
-    </div>
 </div>
 
 </main>
@@ -1004,6 +1294,249 @@ const DEF = { apiUrl:'http://localhost:3000', refreshInterval:30, repos:'' };
 function cfg(){ try{ return {...DEF,...JSON.parse(localStorage.engram_cfg||'{}')}; }catch{return DEF;} }
 window.saveConfig = ()=>{ localStorage.engram_cfg=JSON.stringify({apiUrl:$('cfgUrl').value.replace(/\/+$/,''),refreshInterval:+$('cfgRefresh').value||30}); location.reload(); };
 window.resetConfig = ()=>{ localStorage.removeItem('engram_cfg'); location.reload(); };
+
+// ═══════════════════════════════════════════════
+// AUTH — JWT session management
+// ═══════════════════════════════════════════════
+let authToken = localStorage.getItem('engram_token') || null;
+let currentUser = null;
+
+function setAuth(token, user) {
+    authToken = token;
+    currentUser = user;
+    if (token) localStorage.setItem('engram_token', token);
+    else localStorage.removeItem('engram_token');
+    if (user) localStorage.setItem('engram_user', JSON.stringify(user));
+    else localStorage.removeItem('engram_user');
+    updateUserUI();
+}
+
+function getStoredUser() {
+    try { return JSON.parse(localStorage.getItem('engram_user') || 'null'); } catch { return null; }
+}
+
+function updateUserUI() {
+    const menu = $('userMenu');
+    if (currentUser && authToken) {
+        menu.style.display = '';
+        const initials = currentUser.avatar_initials || currentUser.display_name?.charAt(0) || 'E';
+        $('topbarAvatar').textContent = initials;
+        $('udName').textContent = currentUser.display_name || currentUser.username;
+        $('udEmail').textContent = currentUser.email || currentUser.username;
+    } else {
+        menu.style.display = 'none';
+    }
+}
+
+window.toggleUserMenu = function() {
+    $('userDropdown').classList.toggle('open');
+};
+window.closeUserMenu = function() {
+    $('userDropdown').classList.remove('open');
+};
+// Close dropdown on outside click
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.user-menu')) closeUserMenu();
+});
+
+window.doLogin = async function() {
+    const username = $('loginUsername').value.trim();
+    const password = $('loginPassword').value;
+    const err = $('loginError');
+    err.textContent = '';
+    if (!username || !password) { err.textContent = 'Please enter username and password.'; return; }
+    try {
+        const c = cfg();
+        const r = await fetch(c.apiUrl + '/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password }),
+        });
+        const j = await r.json();
+        if (r.ok && j.token) {
+            setAuth(j.token, j.user);
+            $('loginOverlay').style.display = 'none';
+            fetchAll();
+        } else {
+            err.textContent = j.error || 'Login failed.';
+        }
+    } catch (e) {
+        err.textContent = 'Connection failed: ' + e.message;
+    }
+};
+
+window.doLogout = function() {
+    setAuth(null, null);
+    closeUserMenu();
+    $('loginOverlay').style.display = 'flex';
+    $('loginPassword').value = '';
+    $('loginError').textContent = '';
+};
+
+// Check auth state on load
+async function checkAuth() {
+    const c = cfg();
+    try {
+        // First check if an account exists at all
+        const sr = await fetch(c.apiUrl + '/api/auth/status', { signal: AbortSignal.timeout(3000) });
+        if (!sr.ok) return true; // server down, let other checks handle
+        const status = await sr.json();
+
+        if (!status.has_account) {
+            // No account yet — first-start mode, skip login
+            currentUser = getStoredUser();
+            updateUserUI();
+            return true;
+        }
+
+        // Account exists — need to validate token
+        if (!authToken) {
+            showLogin(status.username);
+            return false;
+        }
+
+        // Validate token by calling /api/auth/me
+        const mr = await fetch(c.apiUrl + '/api/auth/me', {
+            headers: { 'Authorization': 'Bearer ' + authToken },
+            signal: AbortSignal.timeout(3000),
+        });
+        if (mr.ok) {
+            const user = await mr.json();
+            currentUser = user;
+            localStorage.setItem('engram_user', JSON.stringify(user));
+            updateUserUI();
+            return true;
+        } else {
+            // Token expired or invalid
+            localStorage.removeItem('engram_token');
+            authToken = null;
+            showLogin(status.username);
+            return false;
+        }
+    } catch {
+        // Server unreachable — allow through with cached user
+        currentUser = getStoredUser();
+        updateUserUI();
+        return true;
+    }
+}
+
+function showLogin(username) {
+    const overlay = $('loginOverlay');
+    overlay.style.display = 'flex';
+    if (username) {
+        $('loginUsername').value = username;
+        $('loginGreeting').textContent = 'Welcome back, ' + username;
+        const initials = username.substring(0, 2).toUpperCase();
+        $('loginAvatar').textContent = initials;
+        $('loginPassword').focus();
+    } else {
+        $('loginUsername').focus();
+    }
+}
+
+// ── Settings tab switcher ──
+window.switchSettingsTab = function(tab) {
+    document.querySelectorAll('.settings-tab').forEach(t => t.classList.toggle('active', t.dataset.stab === tab));
+    document.querySelectorAll('.settings-tab-content').forEach(c => c.classList.toggle('active', c.id === 'stab-' + tab));
+    if (tab === 'profile') loadProfileData();
+    if (tab === 'security') loadSecurityData();
+};
+
+async function loadProfileData() {
+    if (!authToken) return;
+    try {
+        const c = cfg();
+        const [me, sess] = await Promise.all([
+            fetch(c.apiUrl + '/api/auth/me', { headers: { 'Authorization': 'Bearer ' + authToken } }).then(r => r.json()),
+            fetch(c.apiUrl + '/api/auth/sessions', { headers: { 'Authorization': 'Bearer ' + authToken } }).then(r => r.json()),
+        ]);
+        $('profileAvatar').textContent = me.avatar_initials || me.display_name?.charAt(0) || 'E';
+        $('profileName').textContent = me.display_name || me.username;
+        $('profileMeta').textContent = me.username + ' \u2022 ' + me.role;
+        $('profDisplayName').value = me.display_name || '';
+        $('profEmail').value = me.email || '';
+        $('profUsername').textContent = me.username;
+        $('profRole').textContent = me.role || 'admin';
+        if (sess.current_session) {
+            $('profSession').textContent = sess.current_session.session_id?.slice(0, 8) + '...';
+            const exp = new Date(sess.current_session.expires_at * 1000);
+            $('profExpires').textContent = exp.toLocaleDateString() + ' ' + exp.toLocaleTimeString();
+        }
+    } catch (e) { console.warn('Profile load:', e); }
+}
+
+async function loadSecurityData() {
+    try {
+        const c = cfg();
+        const sess = await fetch(c.apiUrl + '/api/auth/sessions', { headers: { 'Authorization': 'Bearer ' + authToken } }).then(r => r.json());
+        $('secPassBadge').textContent = sess.security?.password_set ? 'Set' : 'Not Set';
+        $('secPassBadge').className = 'security-badge ' + (sess.security?.password_set ? 'ok' : 'warn');
+        $('secJwtBadge').textContent = sess.security?.jwt_configured ? 'Active' : 'Inactive';
+        $('secJwtBadge').className = 'security-badge ' + (sess.security?.jwt_configured ? 'ok' : 'warn');
+        // Check webhook secret
+        const cf = await fetch(c.apiUrl + '/api/config', { headers: { 'Authorization': 'Bearer ' + authToken } }).then(r => r.json());
+        const hasWebhook = cf.webhook_secret_set || false;
+        $('secWebhookBadge').textContent = hasWebhook ? 'Configured' : 'Not Set';
+        $('secWebhookBadge').className = 'security-badge ' + (hasWebhook ? 'ok' : 'warn');
+    } catch (e) { console.warn('Security load:', e); }
+}
+
+window.saveProfile = async function() {
+    const status = $('profSaveStatus');
+    status.textContent = 'Saving...'; status.style.color = 'var(--text3)';
+    try {
+        const c = cfg();
+        const r = await fetch(c.apiUrl + '/api/auth/update-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+            body: JSON.stringify({
+                display_name: $('profDisplayName').value.trim(),
+                email: $('profEmail').value.trim(),
+            }),
+        });
+        const j = await r.json();
+        if (r.ok) {
+            currentUser = j.user;
+            localStorage.setItem('engram_user', JSON.stringify(j.user));
+            updateUserUI();
+            status.textContent = 'Profile saved!'; status.style.color = 'var(--green)';
+            loadProfileData();
+        } else {
+            status.textContent = 'Error: ' + (j.error || 'Unknown'); status.style.color = 'var(--red)';
+        }
+    } catch (e) { status.textContent = 'Failed: ' + e.message; status.style.color = 'var(--red)'; }
+};
+
+window.changePassword = async function() {
+    const status = $('secPassStatus');
+    const cur = $('secCurrentPass').value;
+    const np = $('secNewPass').value;
+    const cp = $('secConfirmPass').value;
+    status.textContent = ''; status.style.color = 'var(--text3)';
+    if (!cur) { status.textContent = 'Enter your current password.'; status.style.color = 'var(--red)'; return; }
+    if (np.length < 6) { status.textContent = 'New password must be at least 6 characters.'; status.style.color = 'var(--red)'; return; }
+    if (np !== cp) { status.textContent = 'New passwords do not match.'; status.style.color = 'var(--red)'; return; }
+    status.textContent = 'Changing password...'; status.style.color = 'var(--accent)';
+    try {
+        const c = cfg();
+        const r = await fetch(c.apiUrl + '/api/auth/change-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+            body: JSON.stringify({ current_password: cur, new_password: np }),
+        });
+        const j = await r.json();
+        if (r.ok) {
+            setAuth(j.token, currentUser);
+            $('secCurrentPass').value = '';
+            $('secNewPass').value = '';
+            $('secConfirmPass').value = '';
+            status.textContent = 'Password changed! All other sessions invalidated.'; status.style.color = 'var(--green)';
+        } else {
+            status.textContent = j.error || 'Failed to change password.'; status.style.color = 'var(--red)';
+        }
+    } catch (e) { status.textContent = 'Error: ' + e.message; status.style.color = 'var(--red)'; }
+};
 
 // Save tokens/repos to the backend (POST /api/config/update)
 window.saveServerConfig = async ()=>{
@@ -1029,7 +1562,9 @@ window.saveServerConfig = async ()=>{
     if(Object.keys(body).length===0){ status.textContent='Nothing to save — fill in at least one field.'; status.style.color='var(--yellow)'; return; }
     try{
         const c=cfg();
-        const r=await fetch(c.apiUrl+'/api/config/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+        const hdrs={'Content-Type':'application/json'};
+        if(authToken) hdrs['Authorization']='Bearer '+authToken;
+        const r=await fetch(c.apiUrl+'/api/config/update',{method:'POST',headers:hdrs,body:JSON.stringify(body)});
         const j=await r.json();
         if(r.ok){ status.textContent='Saved! Changes are live.'; status.style.color='var(--green)'; setTimeout(()=>{fetchSettings();fetchConnections();checkSetupStatus();},500); }
         else{ status.textContent='Error: '+(j.error||'Unknown'); status.style.color='var(--red)'; }
@@ -1065,7 +1600,26 @@ window.toggleHelp = function(el){
 
 window.submitFirstStart = async function(){
     const status=$('fsStatus');
-    status.textContent='Saving configuration...'; status.style.color='var(--accent)';
+    status.textContent='Validating...'; status.style.color='var(--accent)';
+
+    // ── Step 1: Validate & Create Account ──
+    const username=$('fsUsername').value.trim();
+    const displayName=$('fsDisplayName').value.trim();
+    const password=$('fsPassword').value;
+    const passwordConfirm=$('fsPasswordConfirm').value;
+    const email=$('fsEmail').value.trim();
+
+    if(username.length<3){
+        status.textContent='Username must be at least 3 characters.'; status.style.color='var(--red)'; return;
+    }
+    if(password.length<6){
+        status.textContent='Password must be at least 6 characters.'; status.style.color='var(--red)'; return;
+    }
+    if(password!==passwordConfirm){
+        status.textContent='Passwords do not match.'; status.style.color='var(--red)'; return;
+    }
+
+    // ── Gather config body ──
     const body={};
     const nt=$('fsNotionToken').value.trim();
     if(nt && !nt.startsWith('••')) body.notion_token=nt;
@@ -1086,32 +1640,28 @@ window.submitFirstStart = async function(){
 
     if(!nt || (!nt.startsWith('ntn_') && !nt.startsWith('••'))){
         status.textContent='Notion integration token is required. It starts with ntn_';
-        status.style.color='var(--red)';
-        return;
+        status.style.color='var(--red)'; return;
     }
     if(!ppid){
         status.textContent='Parent Page ID is required. Create a Notion page, share it with ENGRAM, and paste the page ID.';
-        status.style.color='var(--red)';
-        return;
+        status.style.color='var(--red)'; return;
     }
     if(ppid.replace(/-/g,'').length!==32){
         status.textContent='Invalid Page ID. It should be a 32-character hex string (with or without dashes).';
-        status.style.color='var(--red)';
-        return;
+        status.style.color='var(--red)'; return;
     }
 
     // Validate repo names format
     if(body.github_repos && body.github_repos.length){
         for(const repo of body.github_repos){
             if(!/^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/.test(repo)){
-                status.textContent='Invalid repo format: "'+repo+'". Use owner/repo format (e.g. manojpisini/engram).';
-                status.style.color='var(--red)';
-                return;
+                status.textContent='Invalid repo format: "'+repo+'". Use owner/repo format.';
+                status.style.color='var(--red)'; return;
             }
         }
     }
 
-    // Validate repos exist on GitHub if token is provided
+    // Validate repos exist on GitHub
     if(gt && body.github_repos && body.github_repos.length){
         status.textContent='Validating GitHub repositories...';
         status.style.color='var(--accent)';
@@ -1121,56 +1671,62 @@ window.submitFirstStart = async function(){
                     headers:{'Authorization':'Bearer '+gt,'Accept':'application/vnd.github+json'},
                     signal:AbortSignal.timeout(8000)
                 });
-                if(vr.status===404){
-                    status.textContent='Repository "'+repo+'" not found on GitHub. Check the name and your token permissions.';
-                    status.style.color='var(--red)';
-                    return;
-                }
-                if(vr.status===401||vr.status===403){
-                    status.textContent='GitHub token lacks permission to access "'+repo+'". Check token scopes.';
-                    status.style.color='var(--red)';
-                    return;
-                }
-            }catch(ve){
-                status.textContent='Could not verify repo "'+repo+'": '+ve.message;
-                status.style.color='var(--red)';
-                return;
-            }
+                if(vr.status===404){ status.textContent='Repository "'+repo+'" not found on GitHub.'; status.style.color='var(--red)'; return; }
+                if(vr.status===401||vr.status===403){ status.textContent='GitHub token lacks permission for "'+repo+'".'; status.style.color='var(--red)'; return; }
+            }catch(ve){ status.textContent='Could not verify "'+repo+'": '+ve.message; status.style.color='var(--red)'; return; }
         }
     }
 
     try{
         const c=cfg();
-        const r=await fetch(c.apiUrl+'/api/config/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+
+        // ── Create admin account ──
+        status.textContent='Creating admin account...'; status.style.color='var(--accent)';
+        const regR=await fetch(c.apiUrl+'/api/auth/register',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({username, password, display_name:displayName||username, email}),
+        });
+        const regJ=await regR.json();
+        if(!regR.ok && regR.status!==409){
+            status.textContent='Account creation failed: '+(regJ.error||'Unknown'); status.style.color='var(--red)'; return;
+        }
+        // If 409 (already exists), that's fine — user is re-running setup
+        if(regR.ok && regJ.token){
+            setAuth(regJ.token, regJ.user);
+        }
+
+        // ── Save config (now with auth token) ──
+        status.textContent='Saving configuration...'; status.style.color='var(--accent)';
+        const headers={'Content-Type':'application/json'};
+        if(authToken) headers['Authorization']='Bearer '+authToken;
+        const r=await fetch(c.apiUrl+'/api/config/update',{method:'POST',headers,body:JSON.stringify(body)});
         const j=await r.json();
         if(!r.ok){ status.textContent='Error: '+(j.error||'Unknown'); status.style.color='var(--red)'; return; }
 
         status.textContent='Tokens saved! Initializing Notion databases (this takes ~30s)...';
         status.style.color='var(--accent)';
 
-        // Auto-trigger Notion setup
-        const sr=await fetch(c.apiUrl+'/api/setup/notion',{method:'POST',signal:AbortSignal.timeout(120000)});
+        // ── Trigger Notion setup ──
+        const setupHeaders={'Content-Type':'application/json'};
+        if(authToken) setupHeaders['Authorization']='Bearer '+authToken;
+        const sr=await fetch(c.apiUrl+'/api/setup/notion',{method:'POST',headers:setupHeaders,signal:AbortSignal.timeout(120000)});
         const sj=await sr.json();
         if(sr.ok){
-            const pageId = sj.engram_page_id || '';
-            status.innerHTML='<span style="color:var(--green)">&#10003; Setup complete!</span> Created ENGRAM page with 23 databases.' +
-                (pageId ? '<br><span style="font-size:10px;color:var(--text3)">Page ID: <code>'+pageId+'</code></span>' : '') +
+            const pageId=sj.engram_page_id||'';
+            status.innerHTML='<span style="color:var(--green)">&#10003; Setup complete!</span> Account created &amp; 23 databases initialized.' +
+                (pageId?'<br><span style="font-size:10px;color:var(--text3)">Page ID: <code>'+pageId+'</code></span>':'') +
                 '<br>Launching dashboard...';
             status.style.color='var(--green)';
-            // Store the page ID in the settings field
-            if(pageId) $('cfgWorkspaceId').value = pageId;
-            setTimeout(()=>{
-                $('firstStartOverlay').style.display='none';
-                fetchAll();
-            },2500);
+            if(pageId) $('cfgWorkspaceId').value=pageId;
+            setTimeout(()=>{ $('firstStartOverlay').style.display='none'; fetchAll(); },2500);
         } else {
-            status.textContent='Tokens saved but DB init failed: '+(sj.error||'Unknown')+'. You can retry from the Setup Wizard on the Home tab.';
+            status.textContent='Account created. DB init failed: '+(sj.error||'Unknown')+'. Retry from Home tab.';
             status.style.color='var(--accent)';
             setTimeout(()=>{ $('firstStartOverlay').style.display='none'; fetchAll(); },3000);
         }
     }catch(e){
-        status.textContent='Error: '+e.message;
-        status.style.color='var(--red)';
+        status.textContent='Error: '+e.message; status.style.color='var(--red)';
     }
 };
 
@@ -1217,11 +1773,19 @@ function langColor(l){ const m={JavaScript:'#f1e05a',TypeScript:'#3178c6',Python
 // ── Repo management ──
 let currentRepo = null;
 
-// ── API ──
+// ── API (with JWT auth) ──
 async function api(path){
     const c=cfg();
     const url=new URL(path, c.apiUrl);
-    const r=await fetch(url, {signal:AbortSignal.timeout(8000)});
+    const headers={};
+    if(authToken) headers['Authorization']='Bearer '+authToken;
+    const r=await fetch(url, {headers, signal:AbortSignal.timeout(8000)});
+    if(r.status===401){
+        // Token expired — show login
+        const authSt=await fetch(c.apiUrl+'/api/auth/status').then(r=>r.json()).catch(()=>({has_account:false}));
+        if(authSt.has_account){ showLogin(authSt.username); }
+        throw new Error('Session expired');
+    }
     if(!r.ok) throw new Error(r.statusText);
     return r.json();
 }
@@ -1591,6 +2155,69 @@ async function fetchModules(){
     }catch(e){ console.warn('Modules:',e); }
 }
 
+// ═══════════════════════════════════════════════
+// ONBOARDING
+// ═══════════════════════════════════════════════
+async function fetchOnboarding(){
+    try{
+        const [tracks,steps,gaps]=await Promise.all([
+            api('/api/dashboard/onboarding-tracks').catch(()=>({results:[]})),
+            api('/api/dashboard/onboarding-steps').catch(()=>({results:[]})),
+            api('/api/dashboard/knowledge-gaps').catch(()=>({results:[]})),
+        ]);
+        const tps=pages(tracks); const sps=pages(steps); const gps=pages(gaps);
+        const autoGen=sps.filter(p=>np(p,'Auto-generated')===true).length;
+        $('obTracks').textContent=tps.length;
+        $('obSteps').textContent=sps.length;
+        $('obGaps').textContent=gps.length;
+        $('obAutoGen').textContent=autoGen;
+
+        // Tracks table
+        $('tbOnboardTracks').innerHTML=tps.map(p=>{
+            const name=np(p,'Track Name'); const role=np(p,'Role'); const stepCount=np(p,'Step Count'); const hours=np(p,'Estimated Hours');
+            return `<tr><td>${name}</td><td>${role?tag(role,'ok'):'-'}</td><td>${stepCount||'-'}</td><td>${hours?hours+'h':'-'}</td></tr>`;
+        }).join('')||'<tr><td colspan="4" style="text-align:center;color:var(--text3)">No onboarding tracks yet. Use the form above to generate one.</td></tr>';
+
+        // Steps table
+        $('tbOnboardSteps').innerHTML=sps.slice(0,50).map(p=>{
+            const title=np(p,'Step Title'); const weekDay=np(p,'Week/Day'); const type=np(p,'Type'); const desc=np(p,'Description'); const est=np(p,'Estimated Time'); const ai=np(p,'Auto-generated');
+            const typeCls=type==='Environment Setup'?'open':type==='Reading'?'medium':type==='Hands-on Task'?'ok':type==='Code Exploration'?'merged':'draft';
+            return `<tr><td>${title}</td><td class="mono">${weekDay||'-'}</td><td>${type?tag(type,typeCls):'-'}</td><td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${desc||'-'}</td><td>${est?est+'m':'-'}</td><td>${ai?'&#10003;':''}</td></tr>`;
+        }).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--text3)">No onboarding steps yet</td></tr>';
+
+        // Knowledge gaps table
+        $('tbKnowledgeGaps').innerHTML=gps.map(p=>{
+            const title=np(p,'Gap Title'); const type=np(p,'Type'); const sev=np(p,'Severity'); const status=np(p,'Status'); const detected=np(p,'Detected At');
+            const sevCls=sev==='Critical'?'critical':sev==='High'?'high':sev==='Medium'?'medium':'low';
+            const stCls=status==='Open'?'high':status==='In Progress'?'medium':'ok';
+            return `<tr><td>${title}</td><td>${type||'-'}</td><td>${sev?tag(sev,sevCls):'-'}</td><td>${status?tag(status,stCls):'-'}</td><td>${detected||'-'}</td></tr>`;
+        }).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--text3)">No knowledge gaps detected</td></tr>';
+    }catch(e){ console.warn('Onboarding:',e); }
+}
+
+window.triggerOnboarding = async function(){
+    const name=$('obName').value.trim();
+    const role=$('obRole').value;
+    const repo=$('obRepo').value.trim();
+    const status=$('obStatus');
+    if(!name){ status.textContent='Please enter an engineer name.'; status.style.color='var(--red)'; return; }
+    status.textContent='Generating onboarding track with Claude AI... This may take 30-60s.'; status.style.color='var(--accent)';
+    try{
+        const c=cfg();
+        const body={engineer_name:name, role:role, project_id:'default'};
+        if(repo) body.repo=repo;
+        const obHeaders={'Content-Type':'application/json'};
+        if(authToken) obHeaders['Authorization']='Bearer '+authToken;
+        const r=await fetch(c.apiUrl+'/api/trigger/onboard',{method:'POST',headers:obHeaders,body:JSON.stringify(body),signal:AbortSignal.timeout(120000)});
+        if(r.ok){
+            status.innerHTML='<span style="color:var(--green)">&#10003; Onboarding track generated!</span> Refreshing data...';
+            setTimeout(()=>fetchOnboarding(),2000);
+        } else {
+            status.textContent='Failed to generate: '+r.statusText; status.style.color='var(--red)';
+        }
+    }catch(e){ status.textContent='Error: '+e.message; status.style.color='var(--red)'; }
+};
+
 async function fetchVault(){
     try{
         const d=await api('/api/dashboard/env-config');
@@ -1759,7 +2386,9 @@ window.runNotionSetup = async function(){
     status.style.color='var(--accent)';
     try{
         const c=cfg();
-        const r=await fetch(c.apiUrl+'/api/setup/notion',{method:'POST',signal:AbortSignal.timeout(120000)});
+        const wizHeaders={};
+        if(authToken) wizHeaders['Authorization']='Bearer '+authToken;
+        const r=await fetch(c.apiUrl+'/api/setup/notion',{method:'POST',headers:wizHeaders,signal:AbortSignal.timeout(120000)});
         const j=await r.json();
         if(r.ok){
             status.textContent='Done! All databases created.';
@@ -1782,7 +2411,7 @@ window.runNotionSetup = async function(){
 // ── Fetch all ──
 async function fetchAll(){
     fetchHealth(); fetchEvents(); fetchRfcs(); fetchVulns();
-    fetchReviews(); fetchModules(); fetchVault(); fetchReleases(); fetchBenchmarks();
+    fetchReviews(); fetchModules(); fetchOnboarding(); fetchVault(); fetchReleases(); fetchBenchmarks();
     fetchGitHub(); fetchConnections(); fetchSettings(); fetchHomeNotionStats();
     checkSetupStatus();
 }
@@ -1806,8 +2435,20 @@ async function checkConnection(){
 // ── Init ──
 const c=cfg();
 $('cfgUrl').value=c.apiUrl; $('cfgRefresh').value=c.refreshInterval;
-checkConnection().then(ok=>{ if(ok){ checkFirstStart(); fetchAll(); } });
-setInterval(()=>{ checkConnection().then(ok=>{ if(ok) fetchAll(); }); }, c.refreshInterval*1000);
+// Restore cached user for immediate UI
+currentUser=getStoredUser();
+updateUserUI();
+
+async function initApp(){
+    const connected=await checkConnection();
+    if(!connected) return;
+    const authed=await checkAuth();
+    if(!authed) return; // login overlay shown
+    checkFirstStart();
+    fetchAll();
+}
+initApp();
+setInterval(()=>{ checkConnection().then(ok=>{ if(ok && authToken) fetchAll(); }); }, c.refreshInterval*1000);
 
 })();
 </script>

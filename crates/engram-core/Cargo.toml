@@ -39,3 +39,6 @@ sha2 = { workspace = true }
 hex = { workspace = true }
 regex = { workspace = true }
 dotenvy = { workspace = true }
+argon2 = { workspace = true }
+jsonwebtoken = { workspace = true }
+rand = { workspace = true }
