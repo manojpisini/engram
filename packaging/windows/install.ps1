@@ -25,7 +25,7 @@ Write-Host "  Binary: $InstallDir\engram.exe" -ForegroundColor Green
 
 # Copy config template if not exists
 if (!(Test-Path "$ConfigDir\engram.toml")) {
-    Copy-Item ".\engram.toml" "$ConfigDir\engram.toml" -Force
+    Copy-Item ".\engram.toml.example" "$ConfigDir\engram.toml" -Force
     Write-Host "  Config: $ConfigDir\engram.toml" -ForegroundColor Green
 } else {
     Write-Host "  Config: $ConfigDir\engram.toml (existing, kept)" -ForegroundColor Cyan

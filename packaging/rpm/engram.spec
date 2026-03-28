@@ -18,7 +18,7 @@ mkdir -p %{buildroot}/usr/lib/systemd/system
 mkdir -p %{buildroot}/usr/share/engram/dashboard
 
 cp %{_sourcedir}/engram %{buildroot}/usr/bin/engram
-cp %{_sourcedir}/engram.toml %{buildroot}/etc/engram/engram.toml
+cp %{_sourcedir}/engram.toml.example %{buildroot}/etc/engram/engram.toml
 cp %{_sourcedir}/engram.service %{buildroot}/usr/lib/systemd/system/engram.service
 cp -r %{_sourcedir}/dashboard/* %{buildroot}/usr/share/engram/dashboard/
 

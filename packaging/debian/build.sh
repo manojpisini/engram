@@ -70,7 +70,7 @@ chmod 755 "/tmp/${PKG}/DEBIAN/prerm"
 
 # Copy files
 cp "$ROOT/target/release/engram" "/tmp/${PKG}/usr/bin/engram"
-cp "$ROOT/engram.toml" "/tmp/${PKG}/etc/engram/engram.toml"
+cp "$ROOT/engram.toml.example" "/tmp/${PKG}/etc/engram/engram.toml"
 cp "$ROOT/packaging/systemd/engram.service" "/tmp/${PKG}/usr/lib/systemd/system/engram.service"
 cp -r "$ROOT/dashboard/"* "/tmp/${PKG}/usr/share/engram/dashboard/"
 

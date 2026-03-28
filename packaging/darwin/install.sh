@@ -41,7 +41,7 @@ fi
 
 # Copy config if not present
 if [ ! -f "$CONFIG_DIR/engram.toml" ]; then
-    cp "$ROOT/engram.toml" "$CONFIG_DIR/engram.toml"
+    cp "$ROOT/engram.toml.example" "$CONFIG_DIR/engram.toml"
     echo "  Config: $CONFIG_DIR/engram.toml"
 else
     echo "  Config: $CONFIG_DIR/engram.toml (existing, kept)"

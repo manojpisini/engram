@@ -18,7 +18,7 @@ build() {
 package() {
     cd "$srcdir/.."
     install -Dm755 "target/release/engram" "$pkgdir/usr/bin/engram"
-    install -Dm644 "engram.toml" "$pkgdir/etc/engram/engram.toml"
+    install -Dm644 "engram.toml.example" "$pkgdir/etc/engram/engram.toml"
     install -Dm644 "packaging/systemd/engram.service" "$pkgdir/usr/lib/systemd/system/engram.service"
     install -dm755 "$pkgdir/usr/share/engram/dashboard"
     cp -r dashboard/* "$pkgdir/usr/share/engram/dashboard/"
