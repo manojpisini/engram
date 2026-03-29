@@ -2574,6 +2574,7 @@ async function fetchAll(){
     fetchGitHub(); fetchConnections(); fetchSettings(); fetchHomeNotionStats();
     checkSetupStatus();
 }
+window.fetchAll=fetchAll;
 
 // ── Connection check ──
 async function checkConnection(){
@@ -2618,6 +2619,8 @@ async function initApp(){
     checkFirstStart();
     fetchAll();
 }
+window.initApp=initApp;
+window.updateUserUI=updateUserUI;
 initApp();
 setInterval(()=>{ if(demoMode){ fetchAll(); return; } checkConnection().then(ok=>{ if(ok && authToken) fetchAll(); }); }, c.refreshInterval*1000);
 
