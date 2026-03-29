@@ -40,7 +40,7 @@ type HmacSha256 = Hmac<Sha256>;
 /// Embedded dashboard assets — compiled into the binary at build time.
 /// The dashboard HTML cannot be altered at runtime; config is changed only via API.
 #[derive(Embed)]
-#[folder = "../../dashboard/"]
+#[folder = "dashboard/"]
 #[exclude = "demo.js"]
 struct DashboardAssets;
 

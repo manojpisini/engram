@@ -55,7 +55,7 @@ async fn main() -> Result<()> {
     if !config_path.exists() {
         info!("No config file found at {} — extracting default template", config_path.display());
         #[derive(Embed)]
-        #[folder = "../../"]
+        #[folder = "."]
         #[include = "engram.toml.example"]
         struct CfgTemplate;
 

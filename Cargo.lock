@@ -297,7 +297,7 @@ checksum = "1aaf95b3e5c8f23aa320147307562d361db0ae0d51242340f558153b4eb2439b"
 
 [[package]]
 name = "engram-atlas"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -311,7 +311,7 @@ dependencies = [
 
 [[package]]
 name = "engram-core"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "argon2",
@@ -353,7 +353,7 @@ dependencies = [
 
 [[package]]
 name = "engram-decisions"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -366,7 +366,7 @@ dependencies = [
 
 [[package]]
 name = "engram-health"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -380,7 +380,7 @@ dependencies = [
 
 [[package]]
 name = "engram-pulse"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -393,7 +393,7 @@ dependencies = [
 
 [[package]]
 name = "engram-release"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -407,7 +407,7 @@ dependencies = [
 
 [[package]]
 name = "engram-review"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -420,7 +420,7 @@ dependencies = [
 
 [[package]]
 name = "engram-shield"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -433,7 +433,7 @@ dependencies = [
 
 [[package]]
 name = "engram-timeline"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -447,7 +447,7 @@ dependencies = [
 
 [[package]]
 name = "engram-types"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -462,7 +462,7 @@ dependencies = [
 
 [[package]]
 name = "engram-vault"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "chrono",

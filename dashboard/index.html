@@ -2623,5 +2623,19 @@ setInterval(()=>{ if(demoMode){ fetchAll(); return; } checkConnection().then(ok=
 
 })();
 </script>
+<script>
+// Try to load demo.js — silently ignored in production where the file doesn't exist
+(function(){
+    var s=document.createElement('script');
+    s.src='demo.js';
+    s.onload=function(){
+        var btn=document.getElementById('demoBtn');
+        if(btn && window.getDemoData) btn.style.display='';
+        if(new URLSearchParams(location.search).has('demo') && window.toggleDemo) window.toggleDemo();
+    };
+    s.onerror=function(){}; // silently ignore if demo.js not found
+    document.body.appendChild(s);
+})();
+</script>
 </body>
 </html>

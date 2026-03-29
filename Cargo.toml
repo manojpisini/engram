@@ -15,7 +15,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/manojpisini/engram"
@@ -76,13 +76,13 @@ rust-embed = { version = "8", features = ["mime-guess", "include-exclude"] }
 mime_guess = "2"
 
 # Shared types
-engram-types = { version = "0.1.0", path = "crates/engram-types" }
-engram-decisions = { version = "0.1.0", path = "crates/engram-decisions" }
-engram-pulse = { version = "0.1.0", path = "crates/engram-pulse" }
-engram-shield = { version = "0.1.0", path = "crates/engram-shield" }
-engram-atlas = { version = "0.1.0", path = "crates/engram-atlas" }
-engram-vault = { version = "0.1.0", path = "crates/engram-vault" }
-engram-review = { version = "0.1.0", path = "crates/engram-review" }
-engram-health = { version = "0.1.0", path = "crates/engram-health" }
-engram-timeline = { version = "0.1.0", path = "crates/engram-timeline" }
-engram-release = { version = "0.1.0", path = "crates/engram-release" }
+engram-types = { version = "1.0.0", path = "crates/engram-types" }
+engram-decisions = { version = "1.0.0", path = "crates/engram-decisions" }
+engram-pulse = { version = "1.0.0", path = "crates/engram-pulse" }
+engram-shield = { version = "1.0.0", path = "crates/engram-shield" }
+engram-atlas = { version = "1.0.0", path = "crates/engram-atlas" }
+engram-vault = { version = "1.0.0", path = "crates/engram-vault" }
+engram-review = { version = "1.0.0", path = "crates/engram-review" }
+engram-health = { version = "1.0.0", path = "crates/engram-health" }
+engram-timeline = { version = "1.0.0", path = "crates/engram-timeline" }
+engram-release = { version = "1.0.0", path = "crates/engram-release" }
