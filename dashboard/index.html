@@ -2317,8 +2317,11 @@ async function fetchOnboarding(){
         window._obAllSteps=sps;
         window._obSelectedTrack=null;
 
+        function getStepTrack(p){
+            return np(p,'Track')||np(p,'Track Name')||'';
+        }
         function renderSteps(trackName){
-            const filtered=trackName?sps.filter(p=>np(p,'Track')===trackName):sps;
+            const filtered=trackName?sps.filter(p=>getStepTrack(p)===trackName):sps;
             $('obTrackFilter').textContent=trackName?'Showing: '+trackName:'All tracks';
             $('tbOnboardSteps').innerHTML=filtered.slice(0,50).map(p=>{
                 const title=np(p,'Step Title'); const weekDay=np(p,'Week/Day'); const type=np(p,'Type'); const desc=np(p,'Description'); const est=np(p,'Estimated Time'); const ai=np(p,'Auto-generated');
@@ -2654,7 +2657,7 @@ setInterval(()=>{ if(demoMode){ fetchAll(); return; } checkConnection().then(ok=
 // Try to load demo.js — silently ignored in production where the file doesn't exist
 (function(){
     var s=document.createElement('script');
-    s.src='demo.js';
+    s.src='demo.js?v='+Date.now();
     s.onload=function(){
         var btn=document.getElementById('demoBtn');
         if(btn && window.getDemoData) btn.style.display='';
