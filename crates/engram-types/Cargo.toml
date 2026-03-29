@@ -5,6 +5,11 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "Shared types, config, events, and Notion schemas for ENGRAM"
+readme = "README.md"
+homepage.workspace = true
+authors.workspace = true
+categories.workspace = true
+keywords.workspace = true
 
 [dependencies]
 serde = { workspace = true }

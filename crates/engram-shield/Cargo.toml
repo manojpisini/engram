@@ -5,6 +5,11 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "Security audit parsing and CVE triage agent for ENGRAM"
+readme = "README.md"
+homepage.workspace = true
+authors.workspace = true
+categories.workspace = true
+keywords.workspace = true
 
 [dependencies]
 engram-types = { workspace = true }

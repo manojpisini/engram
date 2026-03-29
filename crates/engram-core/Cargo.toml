@@ -5,7 +5,12 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 description = "ENGRAM core daemon — webhook listener, AI agent router, and embedded dashboard"
-include = ["src/**/*", "build.rs", "Cargo.toml", "dashboard/**/*", "engram.toml.example"]
+readme = "README.md"
+homepage.workspace = true
+authors.workspace = true
+categories.workspace = true
+keywords.workspace = true
+include = ["src/**/*", "build.rs", "Cargo.toml", "README.md", "dashboard/**/*", "engram.toml.example"]
 
 [[bin]]
 name = "engram"

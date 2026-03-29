@@ -19,6 +19,10 @@ version = "1.0.0"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/manojpisini/engram"
+homepage = "https://github.com/manojpisini/engram"
+authors = ["Manoj Pisini <manojpisini.dev@gmail.com>"]
+categories = ["development-tools", "web-programming"]
+keywords = ["notion", "engineering-intelligence", "ai", "github", "devtools"]
 description = "Engineering Intelligence Platform — 9 AI agents that analyze your codebase and write structured intelligence to Notion"
 
 [workspace.dependencies]
