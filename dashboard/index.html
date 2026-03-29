@@ -920,7 +920,7 @@
 
     <!-- Onboarding Steps Table -->
     <div class="card full" style="margin-bottom:16px;">
-        <div class="card-title">Onboarding Steps</div>
+        <div class="card-header"><div class="card-title">Onboarding Steps</div><div id="obTrackFilter" style="font-size:11px;color:var(--accent)"></div></div>
         <table class="tbl">
             <thead><tr><th>Step</th><th>Week/Day</th><th>Type</th><th>Description</th><th>Est. Time</th><th>AI</th></tr></thead>
             <tbody id="tbOnboardSteps"></tbody>
@@ -2313,18 +2313,42 @@ async function fetchOnboarding(){
         $('obGaps').textContent=gps.length;
         $('obAutoGen').textContent=autoGen;
 
-        // Tracks table
-        $('tbOnboardTracks').innerHTML=tps.map(p=>{
+        // Store steps for filtering
+        window._obAllSteps=sps;
+        window._obSelectedTrack=null;
+
+        function renderSteps(trackName){
+            const filtered=trackName?sps.filter(p=>np(p,'Track')===trackName):sps;
+            $('obTrackFilter').textContent=trackName?'Showing: '+trackName:'All tracks';
+            $('tbOnboardSteps').innerHTML=filtered.slice(0,50).map(p=>{
+                const title=np(p,'Step Title'); const weekDay=np(p,'Week/Day'); const type=np(p,'Type'); const desc=np(p,'Description'); const est=np(p,'Estimated Time'); const ai=np(p,'Auto-generated');
+                const typeCls=type==='Environment Setup'?'open':type==='Reading'?'medium':type==='Hands-on Task'?'ok':type==='Code Exploration'?'merged':'draft';
+                return `<tr><td>${title}</td><td class="mono">${weekDay||'-'}</td><td>${type?tag(type,typeCls):'-'}</td><td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${desc||'-'}</td><td>${est?est+'m':'-'}</td><td>${ai?'&#10003;':''}</td></tr>`;
+            }).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--text3)">No steps for this track</td></tr>';
+        }
+
+        // Tracks table — click to filter steps
+        $('tbOnboardTracks').innerHTML=tps.map((p,i)=>{
             const name=np(p,'Track Name'); const role=np(p,'Role'); const stepCount=np(p,'Step Count'); const hours=np(p,'Estimated Hours');
-            return `<tr><td>${name}</td><td>${role?tag(role,'ok'):'-'}</td><td>${stepCount||'-'}</td><td>${hours?hours+'h':'-'}</td></tr>`;
+            return `<tr style="cursor:pointer" onclick="document.querySelectorAll('#tbOnboardTracks tr').forEach(r=>r.style.background='');this.style.background='var(--surface2)';window._obSelectTrack('${name.replace(/'/g,"\\'")}')"><td>${name}</td><td>${role?tag(role,'ok'):'-'}</td><td>${stepCount||'-'}</td><td>${hours?hours+'h':'-'}</td></tr>`;
         }).join('')||'<tr><td colspan="4" style="text-align:center;color:var(--text3)">No onboarding tracks yet. Use the form above to generate one.</td></tr>';
 
-        // Steps table
-        $('tbOnboardSteps').innerHTML=sps.slice(0,50).map(p=>{
-            const title=np(p,'Step Title'); const weekDay=np(p,'Week/Day'); const type=np(p,'Type'); const desc=np(p,'Description'); const est=np(p,'Estimated Time'); const ai=np(p,'Auto-generated');
-            const typeCls=type==='Environment Setup'?'open':type==='Reading'?'medium':type==='Hands-on Task'?'ok':type==='Code Exploration'?'merged':'draft';
-            return `<tr><td>${title}</td><td class="mono">${weekDay||'-'}</td><td>${type?tag(type,typeCls):'-'}</td><td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${desc||'-'}</td><td>${est?est+'m':'-'}</td><td>${ai?'&#10003;':''}</td></tr>`;
-        }).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--text3)">No onboarding steps yet</td></tr>';
+        window._obSelectTrack=function(name){
+            window._obSelectedTrack=name===window._obSelectedTrack?null:name;
+            renderSteps(window._obSelectedTrack);
+            if(!window._obSelectedTrack) document.querySelectorAll('#tbOnboardTracks tr').forEach(r=>r.style.background='');
+        };
+
+        // Default: select first track
+        if(tps.length){
+            const firstName=np(tps[0],'Track Name');
+            window._obSelectedTrack=firstName;
+            renderSteps(firstName);
+            const firstRow=document.querySelector('#tbOnboardTracks tr');
+            if(firstRow) firstRow.style.background='var(--surface2)';
+        } else {
+            renderSteps(null);
+        }
 
         // Knowledge gaps table
         $('tbKnowledgeGaps').innerHTML=gps.map(p=>{
